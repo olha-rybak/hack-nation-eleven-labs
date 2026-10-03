@@ -17,6 +17,7 @@ from apprentice.capture.pause import PauseService
 from apprentice.capture.routes import router as capture_router
 from apprentice.capture.vision import VisionService
 from apprentice.interviewer import router as interviewer_router
+from apprentice.llm.claude_vision import ClaudeVisionClient
 from apprentice.llm.client import LlmClient
 from apprentice.llm.structured import structured_llm
 from apprentice.privacy.redactor import Redactor
@@ -30,13 +31,13 @@ HERE = Path(__file__).parent
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    app.state.llm = LlmClient()
+    s = settings.get_settings()
+    app.state.llm = ClaudeVisionClient(s) if s.VISION_PROVIDER == "anthropic" else LlmClient()
     root = Path(settings.get_settings().SESSIONS_DIR)
     if not root.is_absolute():
         root = Path(settings.__file__).resolve().parents[3] / root
     app.state.store = SessionStore(root)
     app.state.hub = Hub()
-    s = settings.get_settings()
     redactor = app.state.redactor = Redactor(app.state.store, s)
     await asyncio.to_thread(redactor.warm_up)
     pause = app.state.pause = PauseService(app.state.store, app.state.hub, s)

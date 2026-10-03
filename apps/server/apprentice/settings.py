@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     EVENT_MIN_CONFIDENCE: float = 0.6
     VISION_MAX_TOKENS: int = 512
     VISION_THINKING: bool = False
+    VISION_PROVIDER: Literal["anthropic", "local"] = "anthropic"
+    VISION_MODEL: str = "claude-haiku-4-5"
+    VISION_EFFORT: Literal["low", "medium", "high", "xhigh", "max"] = "low"
     ANTHROPIC_API_KEY: str = ""
     MAP_LLM_PROVIDER: Literal["anthropic", "local"] = "anthropic"
     MAP_LLM_MODEL: str = "claude-opus-5-5"

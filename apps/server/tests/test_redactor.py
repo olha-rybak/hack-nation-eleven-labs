@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from PIL import Image, ImageDraw, ImageFont
 from test_ingest import REPLY, ok, wait_for, wired_client
 
+from apprentice import settings as settings_module
 from apprentice.main import app as main_app
 from apprentice.privacy.redactor import MAP_FILE, Redactor
 from apprentice.session.hub import Hub
@@ -187,6 +188,34 @@ def test_ingested_frame_stored_masked_vision_gets_original(tmp_path):
         assert [base64.b64decode(u.split(",", 1)[1]) for u in urls] == [first, second]
         stored = main_app.state.store.frame_path("s1", "frames/0000001000.jpg").read_bytes()
         assert Image.open(io.BytesIO(stored)).getpixel((5, 5)) == (0, 0, 0)
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_claude_vision_gets_masked_frames(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings_module.get_settings(), "VISION_PROVIDER", "anthropic")
+    client, calls = wired_client(tmp_path, ok)
+    try:
+        main_app.state.redactor = Redactor(
+            main_app.state.store,
+            Settings(PRESIDIO_ENABLED=True),
+            analyzer=FakeAnalyzer(KNOWN),
+            image_engine=BlackoutEngine(),
+        )
+        q = "/ingest/frame?session_id=s1&frame_ts="
+        client.post(q + "0", content=jpeg((250, 250, 250)))
+        client.post(q + "1000", content=jpeg((200, 200, 200)))
+        wait_for(lambda: calls)
+        urls = [
+            p["image_url"]["url"]
+            for p in calls[0]["messages"][-1]["content"]
+            if p["type"] == "image_url"
+        ]
+        stored = [
+            main_app.state.store.frame_path("s1", f"frames/{ts:010d}.jpg").read_bytes()
+            for ts in (0, 1000)
+        ]
+        assert [base64.b64decode(u.split(",", 1)[1]) for u in urls] == stored
     finally:
         client.__exit__(None, None, None)
 

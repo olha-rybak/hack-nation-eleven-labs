@@ -3,6 +3,7 @@ import asyncio
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 
+from apprentice import settings
 from apprentice.capture.vision import Frame
 
 router = APIRouter()
@@ -18,7 +19,8 @@ async def ingest_frame(
 ) -> dict:
     """Raw JPEG/PNG body = a changed frame. Empty body = frame existed but was unchanged.
 
-    The stored copy is PII-masked; the vision model gets the original, it has to read the screen.
+    The stored copy is PII-masked. A local vision model gets the original, it has to read the
+    screen; Claude gets the masked copy, so unredacted frames never leave the machine.
     """
     store, vision, pause, redactor = (
         request.app.state.store,
@@ -38,7 +40,8 @@ async def ingest_frame(
     det.on_screen_change(pause.clock())
     stored = await asyncio.to_thread(redactor.image, session_id, image)
     ref = store.save_frame(session_id, frame_ts, stored)
-    vision.submit(session_id, Frame(frame_ts, ref, image))
+    remote = settings.get_settings().VISION_PROVIDER == "anthropic"
+    vision.submit(session_id, Frame(frame_ts, ref, stored if remote else image))
     return {"frame_ref": ref}
 
 
