@@ -1,0 +1,136 @@
+{
+  "id": "wm-invoices-001",
+  "session_id": "s-0139",
+  "title": "Supplier invoice processing",
+  "created_at": "2026-12-03T16:31:00+01:00",
+  "confirmed_at": "2026-12-03T16:42:00+01:00",
+  "steps": [
+    {
+      "index": 1,
+      "title": "Open the invoice and read the line item",
+      "frame_ts": 12000,
+      "frame_ref": "frames/12000.jpg",
+      "decision": "Opened INV-4471 first and checked what was bought",
+      "reason": { "text": "A spindle unit, that's a machine part. Not a repair.", "speaker": "Sabine", "ts_ms": 15000, "source": "narration" },
+      "guardrail_ids": [],
+      "is_judgment_call": false
+    },
+    {
+      "index": 2,
+      "title": "Code the invoice to a cost center",
+      "frame_ts": 192000,
+      "frame_ref": "frames/192000.jpg",
+      "decision": "Re-coded from opex (4711) to capex (0400)",
+      "reason": { "text": "Equipment over five thousand euros is always capex.", "speaker": "Sabine", "ts_ms": 195000, "source": "live_question" },
+      "guardrail_ids": ["g1", "g2"],
+      "is_judgment_call": true
+    },
+    {
+      "index": 3,
+      "title": "Add the asset number",
+      "frame_ts": 214000,
+      "frame_ref": "frames/214000.jpg",
+      "decision": "Picked asset AN-20931 from the assets under construction",
+      "reason": { "text": "The asset team sends capex back if there's no asset on it.", "speaker": "Sabine", "ts_ms": 218000, "source": "narration" },
+      "guardrail_ids": ["g1"],
+      "is_judgment_call": false
+    },
+    {
+      "index": 4,
+      "title": "Post the invoice",
+      "frame_ts": 241000,
+      "frame_ref": "frames/241000.jpg",
+      "decision": "Posted INV-4471 as document 5100042117",
+      "reason": { "text": "PO matches, amount matches, so it can go.", "speaker": "Sabine", "ts_ms": 243000, "source": "narration" },
+      "guardrail_ids": [],
+      "is_judgment_call": false
+    },
+    {
+      "index": 5,
+      "title": "Compare with the supplier's earlier invoices",
+      "frame_ts": 302000,
+      "frame_ref": "frames/302000.jpg",
+      "decision": "Put INV-4472 from Nordtec on hold as a possible duplicate of INV-4459",
+      "reason": { "text": "Nordtec bills the November line again every December. I hold it until purchasing confirms.", "speaker": "Sabine", "ts_ms": 309000, "source": "live_question" },
+      "guardrail_ids": ["g3"],
+      "is_judgment_call": true
+    },
+    {
+      "index": 6,
+      "title": "Check who the supplier is",
+      "frame_ts": 365000,
+      "frame_ref": "frames/365000.jpg",
+      "decision": "Opened the supplier card for Vltava s.r.o.",
+      "reason": { "text": "Vltava is our own company in Prague, so it's intercompany.", "speaker": "Sabine", "ts_ms": 368000, "source": "narration" },
+      "guardrail_ids": [],
+      "is_judgment_call": false
+    },
+    {
+      "index": 7,
+      "title": "Route for a second approval",
+      "frame_ts": 391000,
+      "frame_ref": "frames/391000.jpg",
+      "decision": "Added M. Novák as second approver and sent INV-4473 for approval",
+      "reason": { "text": "Intercompany needs two signatures, one of them from Prague.", "speaker": "Sabine", "ts_ms": 396000, "source": "live_question" },
+      "guardrail_ids": ["g4"],
+      "is_judgment_call": true
+    }
+  ],
+  "guardrails": [
+    {
+      "id": "g1",
+      "kind": "limit",
+      "statement": "No asset number, no capex booking.",
+      "frame_ts": 192000,
+      "reason": { "text": "No asset number, no capex booking. I park it and ask the asset team.", "speaker": "Sabine", "ts_ms": 452000, "source": "debrief" },
+      "step_index": 2,
+      "check": {
+        "trigger_kind": "field_change",
+        "entity_pattern": "INV-*",
+        "field": "cost_center",
+        "condition": "after == '0400' and asset_number == ''",
+        "severity": "stop"
+      }
+    },
+    {
+      "id": "g2",
+      "kind": "stop_and_ask",
+      "statement": "Unknown supplier: stop and ask the controller.",
+      "frame_ts": 192000,
+      "reason": { "text": "If the supplier isn't in the vendor master, stop. Ask the controller before you book anything.", "speaker": "Sabine", "ts_ms": 517000, "source": "debrief" },
+      "step_index": 2,
+      "check": {
+        "trigger_kind": "invoice_opened",
+        "entity_pattern": "INV-*",
+        "field": "vendor_no",
+        "condition": "vendor_no == ''",
+        "severity": "stop"
+      }
+    },
+    {
+      "id": "g3",
+      "kind": "exception",
+      "statement": "A December Nordtec invoice repeating a billed line goes on hold until purchasing confirms.",
+      "frame_ts": 302000,
+      "reason": { "text": "Only Nordtec does this. I release it myself once purchasing says it's not a duplicate.", "speaker": "Sabine", "ts_ms": 489000, "source": "debrief" },
+      "step_index": 5,
+      "check": null
+    },
+    {
+      "id": "g4",
+      "kind": "limit",
+      "statement": "Invoices from a group company need a second approver from that company.",
+      "frame_ts": 391000,
+      "reason": { "text": "Intercompany needs two signatures, one of them from Prague.", "speaker": "Sabine", "ts_ms": 396000, "source": "live_question" },
+      "step_index": 7,
+      "check": {
+        "trigger_kind": "action",
+        "entity_pattern": "INV-*",
+        "field": "approvers",
+        "condition": "supplier_group_company and len(approvers) < 2",
+        "severity": "stop"
+      }
+    }
+  ],
+  "open_questions": []
+}

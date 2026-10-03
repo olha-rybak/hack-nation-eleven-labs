@@ -15,8 +15,9 @@ Step(index, title,                    # "Code the invoice to a cost center"
      guardrail_ids: list[str],
      is_judgment_call: bool)
 
-Guardrail(id, kind: Literal["limit","exception","stop_and_ask"],
+Guardrail(id, kind: Literal["limit","exception","stop_and_ask","never_do"],
           statement: str,             # "No asset number, no capex booking"
+          frame_ts: int,              # its screen moment
           reason: Quote, step_index: int,
           check: GuardrailCheck | None)   # machine-evaluable form, see T-300
 

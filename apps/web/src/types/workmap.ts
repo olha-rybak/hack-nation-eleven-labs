@@ -11,7 +11,7 @@ export interface Quote {
   source: QuoteSource
 }
 
-export type GuardrailKind = 'limit' | 'exception' | 'stop_and_ask'
+export type GuardrailKind = 'limit' | 'exception' | 'stop_and_ask' | 'never_do'
 
 export interface GuardrailCheck {
   trigger_kind: string
@@ -22,9 +22,9 @@ export interface GuardrailCheck {
 }
 
 export interface Step {
-  index: number
+  index: number // 1-based, unique within a map
   title: string
-  frame_ts: number
+  frame_ts: number // ms since session start
   frame_ref: string
   decision: string
   reason: Quote
@@ -36,6 +36,7 @@ export interface Guardrail {
   id: string
   kind: GuardrailKind
   statement: string
+  frame_ts: number
   reason: Quote
   step_index: number
   check: GuardrailCheck | null
