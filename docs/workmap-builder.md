@@ -30,11 +30,13 @@ evaluator rejects is removed and becomes a `no_threshold` gap.
 
 ## Model
 
-OpenAI-compatible, set in `.env`:
+Set in `.env`:
 
-- OpenAI: `OPENAI_API_KEY=...`, `MAP_LLM_MODEL=gpt-5-mini`, `MAP_LLM_BASE_URL` empty.
-- Local, free (llama-server must be running): `MAP_LLM_BASE_URL=http://127.0.0.1:8080/v1`. Works,
-  but the 8B model misses guardrails and rarely writes checkable conditions; use it for wiring tests.
+- Claude (default): `ANTHROPIC_API_KEY=...`, `MAP_LLM_MODEL=claude-opus-5-5`, `MAP_LLM_EFFORT=high`.
+  Requests opt into Anthropic's server-side fallback (`fallbacks: "default"`), so a refused request is
+  re-run on another model instead of failing. Roughly $0.10 per draft.
+- `MAP_LLM_PROVIDER=local`: the llama-server used for vision, free. Works, but the 8B model misses
+  guardrails and rarely writes checkable conditions; use it for wiring tests.
 
 Prompt: `apps/server/apprentice/prompts/workmap/draft.md`.
 
