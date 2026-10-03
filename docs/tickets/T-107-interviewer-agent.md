@@ -8,6 +8,9 @@ Realtime for transcription, custom LLM pointed at our proxy. Register client too
 - `log_answer(question, answer, about_event_id)` — writes the expert's words back to the session log
 - `off_the_record()` — voice-triggered equivalent of the button
 
+`log_answer` also feeds the knowledge graph (T-110). Until it exists, the test page posts each
+question and answer pair itself, so T-110 is not blocked on this tool.
+
 Configure it to stay silent by default. The agent's standing instruction is that it does **not**
 volunteer speech; it speaks when cued, and otherwise listens.
 

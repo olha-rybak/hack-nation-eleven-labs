@@ -6,7 +6,7 @@ Owner lanes (from the pipeline diagram):
 |---|---|---|
 | **A** | Web app, fake ERP, UI | T-002, T-100, T-101, T-102, T-200, T-202, T-301, T-400 |
 | **B** | Local model, backend, data | T-001, T-103, T-104, T-105, T-106, T-201, T-300, T-401 |
-| **C** | Prompts, ElevenLabs agents, demo | T-107, T-108, T-109, T-203, T-204, T-302, T-303, T-500, T-501 |
+| **C** | Prompts, ElevenLabs agents, demo | T-107, T-108, T-109, T-110, T-203, T-204, T-302, T-303, T-500, T-501 |
 
 ## Order of attack
 
@@ -16,7 +16,7 @@ Nothing else in Capture matters until an agent says something out loud that refe
 
 ```
 Phase 0  setup        T-001  T-002
-Phase 1  capture      T-100 T-101 T-102 T-103 T-104 T-105 T-106 T-107 T-108 T-109
+Phase 1  capture      T-100 T-101 T-102 T-103 T-104 T-105 T-106 T-107 T-108 T-109 T-110
 Phase 2  map          T-200 T-201 T-202 T-203 T-204
 Phase 3  teach        T-300 T-301 T-302 T-303
 Phase 4  trust+demo   T-400 T-401 T-500 T-501

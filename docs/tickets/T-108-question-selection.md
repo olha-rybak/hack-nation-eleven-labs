@@ -9,9 +9,10 @@ the interruption. Ranking, highest first:
 3. a hesitation — a long still screen on a decision field
 4. a repeated pattern whose trigger isn't visible
 
-Hard filters: never ask what the glossary or the config already answers; never ask the same subject
-twice; at least one question per session must target a **guardrail** (a limit, an exception, a
-stop-and-ask moment) — if none has been asked by the fourth opportunity, force one.
+Hard filters: never ask what the glossary or the config already answers; never ask a subject already
+in the **Known** block from T-110, which covers earlier sessions too, not just this one; at least one
+question per session must target a **guardrail** (a limit, an exception, a stop-and-ask moment) — if
+none has been asked by the fourth opportunity, force one.
 
 Keep the question to one sentence, grounded in something on screen: *"You moved that one to capex — what
 made you do that?"*, not *"Can you describe your process?"*
