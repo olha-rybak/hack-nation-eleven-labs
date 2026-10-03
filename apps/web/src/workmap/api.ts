@@ -3,7 +3,7 @@ import type { WorkMap } from '../types/workmap'
 
 // Proposed server routes (lane B, T-201/T-105):
 //   GET /api/sessions/:id/workmap         -> WorkMap JSON, 404 until the debrief produced one
-//   GET /api/sessions/:id/frames/:ts.jpg  -> the saved frame at or just before ts (ms)
+//   GET /api/sessions/:id/frames/:ts.jpg  -> the saved frame, named by 10-digit ts (exists today)
 
 const useMock = import.meta.env.VITE_MOCK === '1'
 
@@ -24,7 +24,8 @@ const mockFrames = [
 ].sort((a, b) => a - b)
 
 export function frameUrl(sessionId: string, ts: number): string {
-  if (!useMock) return `/api/sessions/${encodeURIComponent(sessionId)}/frames/${ts}.jpg`
+  // The session store names frames by zero-padded timestamp (store.save_frame).
+  if (!useMock) return `/api/sessions/${encodeURIComponent(sessionId)}/frames/${String(ts).padStart(10, '0')}.jpg`
   const at = mockFrames.filter((f) => f <= ts).at(-1) ?? mockFrames[0]
   return `/mock-frames/${at}.jpg`
 }

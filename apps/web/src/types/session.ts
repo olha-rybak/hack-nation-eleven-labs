@@ -1,4 +1,4 @@
-// Provisional until the session log format lands in T-105.
+// The server stores speaker as free text; lib/feed.ts maps it onto these two sides.
 
 export type Speaker = 'expert' | 'agent'
 
