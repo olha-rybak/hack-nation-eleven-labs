@@ -1,5 +1,5 @@
 # T-600 · Obsidian vault export
-**Lane B · stretch · depends on: T-200**
+**Lane B · stretch · owner: Hlib · depends on: T-200**
 
 Export a confirmed Work Map as an Obsidian vault: one note per step, one per guardrail, frames as
 attachments, `[[wikilinks]]` from steps to the guardrails that govern them, and an index note that is the

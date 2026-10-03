@@ -1,5 +1,5 @@
 # T-105 · Session log + live channel
-**Lane B · depends on: T-001**
+**Lane B · owner: Hlib · depends on: T-001**
 
 Durable, inspectable session state under `data/sessions/<session_id>/`: `frames/` as JPEGs named by
 timestamp, `events.jsonl`, `transcript.jsonl` (speaker, ts_ms, text), `meta.json`. Append-only, so a
