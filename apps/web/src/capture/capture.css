@@ -89,6 +89,11 @@
   object-fit: contain;
 }
 
+/* The stronger glass tint keeps the label readable over a bright shared screen in dark mode. */
+.cap-recording.glass {
+  background-color: var(--glass-strong);
+}
+
 .cap-recording {
   position: absolute;
   top: 16px;

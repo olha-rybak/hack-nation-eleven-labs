@@ -74,9 +74,7 @@ class Step(_Model):
 
     @model_validator(mode="wrap")
     @classmethod
-    def _name_the_step(
-        cls, data: Any, handler: ModelWrapValidatorHandler[Self]
-    ) -> Self:
+    def _name_the_step(cls, data: Any, handler: ModelWrapValidatorHandler[Self]) -> Self:
         try:
             return handler(data)
         except ValidationError as exc:
@@ -95,9 +93,7 @@ class Guardrail(_Model):
 
     @model_validator(mode="wrap")
     @classmethod
-    def _name_the_guardrail(
-        cls, data: Any, handler: ModelWrapValidatorHandler[Self]
-    ) -> Self:
+    def _name_the_guardrail(cls, data: Any, handler: ModelWrapValidatorHandler[Self]) -> Self:
         try:
             return handler(data)
         except ValidationError as exc:
@@ -144,7 +140,8 @@ class WorkMap(_Model):
         for guardrail in self.guardrails:
             if guardrail.step_index not in known_steps:
                 raise ValueError(
-                    f"guardrail {guardrail.id} ({guardrail.statement!r}) refers to unknown step {guardrail.step_index}"
+                    f"guardrail {guardrail.id} ({guardrail.statement!r}) "
+                    f"refers to unknown step {guardrail.step_index}"
                 )
         return self
 

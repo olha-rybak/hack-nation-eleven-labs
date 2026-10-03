@@ -12,6 +12,8 @@ export default defineConfig(({ mode }) => {
     define: {
       'import.meta.env.VITE_FRAME_FPS': JSON.stringify(root.FRAME_FPS || '1'),
       'import.meta.env.VITE_FRAME_CHANGE_MIN_CELLS': JSON.stringify(root.FRAME_CHANGE_MIN_CELLS || '12'),
+      'import.meta.env.VITE_OFF_THE_RECORD_WINDOW_SEC': JSON.stringify(root.OFF_THE_RECORD_WINDOW_SEC || '30'),
+      'import.meta.env.VITE_MAX_LIVE_QUESTIONS': JSON.stringify(root.MAX_LIVE_QUESTIONS || '5'),
     },
     server: {
       // The mock Work Map is the T-200 fixture, read straight from the server tests.

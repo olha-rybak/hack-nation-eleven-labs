@@ -41,9 +41,7 @@ def test_missing_quote_names_the_step(raw):
 def test_blank_quote_text_names_the_step(raw):
     bad = copy.deepcopy(raw)
     bad["steps"][4]["reason"]["text"] = "   "
-    with pytest.raises(
-        ValidationError, match=r"step 5 .* reason\.text: .*must not be empty"
-    ):
+    with pytest.raises(ValidationError, match=r"step 5 .* reason\.text: .*must not be empty"):
         WorkMap.model_validate(bad)
 
 
@@ -65,9 +63,7 @@ def test_guardrail_without_quote_names_the_guardrail(raw):
 def test_guardrail_without_screen_moment_fails(raw):
     bad = copy.deepcopy(raw)
     del bad["guardrails"][0]["frame_ts"]
-    with pytest.raises(
-        ValidationError, match=r"guardrail g1 .* frame_ts: Field required"
-    ):
+    with pytest.raises(ValidationError, match=r"guardrail g1 .* frame_ts: Field required"):
         WorkMap.model_validate(bad)
 
 

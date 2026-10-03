@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { formatTs } from '../lib/time'
 import type { CaptureStats } from './screenCapture'
-import { useScreenCapture } from './useScreenCapture'
+import type { useScreenCapture } from './useScreenCapture'
 import './capture.css'
 
 const errorText = {
@@ -29,16 +29,10 @@ function StatsLine({ stats, sessionId }: { stats: CaptureStats; sessionId: strin
   )
 }
 
-export function CaptureView({ onSession }: { onSession: (id: string | null) => void }) {
-  const { state, start, stop, reset } = useScreenCapture()
+export function CaptureView({ capture }: { capture: ReturnType<typeof useScreenCapture> }) {
+  const { state, start, stop, reset } = capture
   const videoRef = useRef<HTMLVideoElement>(null)
   const live = state.status === 'live' || state.status === 'stopping'
-  // Keep the panel on the session after Stop, so its conversation stays readable.
-  const sessionId = live ? state.capture.sessionId : state.status === 'ended' ? state.sessionId : null
-
-  useEffect(() => {
-    onSession(sessionId)
-  }, [sessionId, onSession])
 
   const stream = live ? state.capture.stream : null
   useEffect(() => {

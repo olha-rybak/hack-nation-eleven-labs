@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     PAUSE_SILENCE_SEC: float = 2
     ASK_COOLDOWN_SEC: float = 60
     MAX_LIVE_QUESTIONS: int = 5
+    OFF_THE_RECORD_WINDOW_SEC: float = 30
     SESSIONS_DIR: str = "data/sessions"
     PAUSE_TICK_SEC: float = 0.25
     EVENT_MIN_CONFIDENCE: float = 0.6

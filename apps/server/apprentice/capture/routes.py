@@ -29,8 +29,10 @@ async def ingest_frame(
         return {"frame_ref": None}
     if not (image.startswith(b"\xff\xd8") or image.startswith(b"\x89PNG")):
         raise HTTPException(415, "body must be a JPEG or PNG image")
-    det.on_screen_change(pause.clock())
     ref = store.save_frame(session_id, frame_ts, image)
+    if ref is None:  # inside an off-the-record window: nothing written, nothing seen
+        return {"frame_ref": None}
+    det.on_screen_change(pause.clock())
     vision.submit(session_id, Frame(frame_ts, ref, image))
     return {"frame_ref": ref}
 
