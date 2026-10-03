@@ -16,7 +16,7 @@ Status: `planned` = not written yet, `draft` = exists, may change, `stable` = ot
 | Doc | Covers | Tickets | Status |
 |---|---|---|---|
 | [tickets/README.md](tickets/README.md) | Build board, lanes, order of attack | all | stable |
-| `events.md` | Event contract between the vision step and the agent (schema + sample events) | T-103, T-106 | planned |
+| [api.md](api.md) | Backend API: sessions, `/ingest/frame`, event contract, websocket, `ask_now`, `/events` | T-101, T-103, T-104, T-105 | draft |
 | [interviewer-agent.md](interviewer-agent.md) | Interviewer: prompts, events → ElevenLabs agent (built-in Claude), test page, setup | T-106, T-107 | draft |
 | `environment-pack.md` | Glossary, written rules, task: what the agent must not ask | T-109 | planned |
 | `question-selection.md` | How the one question is picked from events | T-108 | planned |
