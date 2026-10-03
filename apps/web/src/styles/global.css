@@ -1,0 +1,299 @@
+:root {
+  --bg: #f4f5f8;
+  --surface: #ffffff;
+  --surface-2: #f0f1f5;
+  --text: #1c1d22;
+  --text-2: #6b6e7a;
+  --line: rgba(28, 32, 60, 0.09);
+  --accent: #0a66d8;
+  --accent-soft: rgba(10, 102, 216, 0.1);
+  --material: rgba(246, 247, 250, 0.72);
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --panel-width: 360px;
+
+  color-scheme: light dark;
+  font: 15px/1.5 var(--font);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101114;
+    --surface: #1b1c21;
+    --surface-2: #24252c;
+    --text: #f2f3f6;
+    --text-2: #a0a3b0;
+    --line: rgba(220, 225, 255, 0.1);
+    --accent: #4a9dff;
+    --accent-soft: rgba(74, 157, 255, 0.16);
+    --material: rgba(24, 25, 30, 0.72);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+button {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+
+/* Shell */
+
+.shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 20px;
+  background: var(--material);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+.modes {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.modes a {
+  padding: 4px 14px;
+  border-radius: 8px;
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.modes a:hover {
+  color: var(--text);
+}
+
+.modes a.active {
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(20, 24, 50, 0.08);
+}
+
+.erp-link {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+/* Session layout: main stage + right side panel */
+
+.session-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--panel-width);
+  min-height: 0;
+}
+
+.stage {
+  overflow: auto;
+  padding: 32px;
+}
+
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+}
+
+.side-panel h2 {
+  margin: 0;
+  padding: 16px 20px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.side-panel .empty {
+  padding: 20px;
+  color: var(--text-2);
+}
+
+.transcript {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0;
+  padding: 12px 20px 20px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.line {
+  animation: line-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.line-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.line-meta time {
+  font-family: var(--mono);
+  font-weight: 400;
+}
+
+.line p {
+  margin: 2px 0 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.line.agent .line-meta span {
+  color: var(--accent);
+}
+
+.line.agent p {
+  background: var(--accent-soft);
+}
+
+@keyframes line-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* Placeholders until each module's ticket lands */
+
+.placeholder {
+  max-width: 560px;
+}
+
+.placeholder h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+
+.placeholder p {
+  color: var(--text-2);
+}
+
+.placeholder button {
+  height: 36px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 500;
+}
+
+.placeholder button:disabled {
+  opacity: 0.4;
+}
+
+.placeholder .todo {
+  font-size: 13px;
+}
+
+/* Fake ERP: deliberately plain, it stands in for a third-party app */
+
+.erp {
+  min-height: 100%;
+  background: #eef0f2;
+  color: #222;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+}
+
+.erp-bar {
+  padding: 8px 16px;
+  background: #34495e;
+  color: #fff;
+  font-weight: bold;
+}
+
+.erp-body {
+  padding: 16px;
+}
+
+@media (max-width: 860px) {
+  .session-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(240px, 40vh);
+  }
+
+  .side-panel {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .stage {
+    padding: 20px 16px;
+  }
+
+  .erp-link {
+    display: none;
+  }
+
+  .topbar {
+    gap: 12px;
+    padding: 10px 16px;
+  }
+
+  .modes a {
+    padding: 4px 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .line {
+    animation: none;
+  }
+}
