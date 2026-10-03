@@ -24,6 +24,10 @@ npm run lint
 backend. Set it to `0` in `.env.development.local` to use the real websocket at
 `/api/sessions/:id/feed`.
 
+With `VITE_MOCK=1` the Work Map page (`/map/demo`) shows the T-200 fixture
+(`apps/server/tests/fixtures/workmap_invoices.json`), and its screen moments come from
+`public/mock-frames/<ts>.jpg`: screenshots of the fake ERP in the state each step describes.
+
 `src/types/workmap.ts` mirrors `apps/server/apprentice/workmap/schema.py` (T-200). Change both together.
 
 The ERP keeps its state in `localStorage`, separately for the expert and training data. **Reset sandbox**
