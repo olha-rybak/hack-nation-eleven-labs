@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interviewer test</title>
+<!--
+  MVP harness for the interviewer agent (T-106/T-107). Not the capture UI (T-102).
+  Events from GET /events  →  conversation.sendContextualUpdate()  (silent background context)
+  "Ask now" button         →  conversation.sendUserMessage("ASK_NOW")  (agent asks one question)
+-->
+<style>
+  :root { --bg:#f6f7f9; --panel:#fff; --line:#dde2e8; --text:#1d2733; --muted:#66727f; --brand:#0a4f7a; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.45 -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); }
+  header { padding:12px 16px; background:var(--brand); color:#fff; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  header b { margin-right:auto; }
+  input { padding:6px 8px; border:1px solid var(--line); border-radius:4px; width:260px; }
+  button { padding:6px 12px; border:1px solid var(--line); border-radius:4px; background:#fff; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  button.primary { background:#ffd34d; border-color:#e0b52e; font-weight:600; }
+  label { font-size:12px; display:flex; gap:4px; align-items:center; }
+  main { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px 16px; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:6px; min-height:60vh; display:flex; flex-direction:column; }
+  h2 { font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin:0; padding:10px 12px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; }
+  ol { margin:0; padding:8px 12px 8px 32px; overflow:auto; flex:1; font-family:ui-monospace, Menlo, monospace; font-size:12px; }
+  .msg { padding:6px 12px; border-bottom:1px solid #f0f2f5; }
+  .msg .who { font-size:11px; color:var(--muted); text-transform:uppercase; }
+  .msg.ai .who { color:var(--brand); font-weight:700; }
+  .msg.cue { color:var(--muted); font-style:italic; }
+  #status { font-size:12px; opacity:.9; }
+  @media (max-width: 700px) { main { grid-template-columns:1fr; } input { width:100%; } }
+</style>
+</head>
+<body>
+<header>
+  <b>Interviewer test</b>
+  <input id="agentId" placeholder="ElevenLabs agent ID">
+  <label><input type="checkbox" id="override" style="width:auto"> repo prompt</label>
+  <button id="start">Start</button>
+  <button id="stop" disabled>Stop</button>
+  <span id="status">disconnected</span>
+</header>
+<main>
+  <section>
+    <h2>Screen events <span>
+      <button id="sample">Send next sample event</button>
+      <button id="clear">Clear</button>
+    </span></h2>
+    <ol id="events"></ol>
+  </section>
+  <section>
+    <h2>Conversation <button id="ask" class="primary" disabled>Ask now</button></h2>
+    <div id="log" style="overflow:auto;flex:1"></div>
+  </section>
+</main>
+
+<script type="module">
+import { Conversation } from "https://cdn.jsdelivr.net/npm/@elevenlabs/client/+esm";
+
+const $ = (id) => document.getElementById(id);
+const agentInput = $("agentId");
+const params = new URLSearchParams(location.search);
+try { agentInput.value = params.get("agent") || localStorage.getItem("agentId") || ""; } catch {}
+
+let conversation = null;
+let seen = 0;            // how many events from /events we have already forwarded
+let samples = null, sampleIdx = 0;
+let pollTimer = null;
+
+// Same shape the agent's system prompt describes: [mm:ss] kind entity · field: before → after
+function formatEvent(e) {
+  const s = Math.floor(e.ts_ms / 1000);
+  let line = `[${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}] ${e.kind} ${e.entity}`;
+  if (e.field) {
+    line += ` · ${e.field}`;
+    if (e.before != null || e.after != null) line += `: ${e.before || "—"} → ${e.after || "—"}`;
+  }
+  return line;
+}
+
+function logMsg(who, text, cls = "") {
+  const div = document.createElement("div");
+  div.className = `msg ${cls}`;
+  div.innerHTML = `<div class="who"></div><div class="text"></div>`;
+  div.querySelector(".who").textContent = who;
+  div.querySelector(".text").textContent = text;
+  $("log").append(div);
+  $("log").scrollTop = $("log").scrollHeight;
+}
+
+async function pollEvents() {
+  const res = await fetch(`/events?since=${seen}`);
+  const fresh = await res.json();
+  for (const e of fresh) {
+    const line = formatEvent(e);
+    const li = document.createElement("li");
+    li.textContent = line;
+    $("events").append(li);
+    conversation?.sendContextualUpdate(`Screen event: ${line}`);
+  }
+  seen += fresh.length;
+}
+
+$("start").onclick = async () => {
+  const agentId = agentInput.value.trim();
+  if (!agentId) return alert("Paste your ElevenLabs agent ID first.");
+  try { localStorage.setItem("agentId", agentId); } catch {}
+  $("start").disabled = true;
+  $("status").textContent = "connecting…";
+  try {
+    await navigator.mediaDevices.getUserMedia({ audio: true });
+    const options = {
+      agentId,
+      connectionType: "webrtc",
+      onConnect: () => { $("status").textContent = "connected"; $("ask").disabled = false; $("stop").disabled = false; },
+      onDisconnect: () => {
+        $("status").textContent = "disconnected";
+        $("ask").disabled = true; $("stop").disabled = true; $("start").disabled = false;
+        conversation = null;
+      },
+      onError: (err) => { console.error(err); logMsg("error", String(err?.message || err), "cue"); },
+      onModeChange: ({ mode }) => { $("status").textContent = `connected · agent ${mode}`; },
+      onMessage: ({ source, message }) => logMsg(source === "ai" ? "apprentice" : "expert", message, source === "ai" ? "ai" : ""),
+    };
+    if ($("override").checked) {
+      const system = await (await fetch("/prompts/interviewer/system.md")).text();
+      options.overrides = { agent: { prompt: { prompt: system }, firstMessage: "" } };
+    }
+    conversation = await Conversation.startSession(options);
+    // Bring the agent up to date with everything already on screen.
+    seen = 0; $("events").innerHTML = "";
+    await pollEvents();
+    pollTimer = setInterval(() => pollEvents().catch(console.error), 1000);
+  } catch (err) {
+    console.error(err);
+    logMsg("error", String(err?.message || err), "cue");
+    $("status").textContent = "disconnected";
+    $("start").disabled = false;
+  }
+};
+
+$("stop").onclick = async () => {
+  clearInterval(pollTimer);
+  await conversation?.endSession();
+};
+
+$("ask").onclick = async () => {
+  const cue = (await (await fetch("/prompts/interviewer/ask_now.md")).text()).trim();
+  logMsg("cue", "ask now", "cue");
+  conversation?.sendUserMessage(cue);
+};
+
+// Simulates the vision step: posts the next fixture event to /events.
+$("sample").onclick = async () => {
+  samples ??= await (await fetch("/fixtures/events.json")).json();
+  if (sampleIdx >= samples.length) return alert("All sample events sent.");
+  await fetch("/events", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(samples[sampleIdx++]) });
+  if (!conversation) await pollEvents();
+};
+
+$("clear").onclick = async () => {
+  await fetch("/events", { method: "DELETE" });
+  seen = 0; sampleIdx = 0; $("events").innerHTML = "";
+};
+</script>
+</body>
+</html>

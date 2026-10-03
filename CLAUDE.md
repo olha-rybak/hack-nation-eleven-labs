@@ -110,6 +110,8 @@ persisted. Question 5 of the Apprentice Test is about trust, so this is demoed, 
 
 ## Working on this
 
+- **Component docs.** `docs/CLAUDE.md` indexes one doc per component (events, agent, proxy, prompts).
+  Read it before working on a component, and update it when you add or change a component doc.
 - **Branch and PR, never push to main.** Three of us work in parallel. One branch per ticket, named
   after it (`t-002-frontend-scaffold`), cut from a fresh `origin/main`. Open a PR and let a teammate
   merge it. Keep a PR to one ticket so conflicts stay small.
