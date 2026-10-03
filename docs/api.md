@@ -42,8 +42,11 @@ are dropped, not guessed.
 The server, not the agent, decides. It pushes over the session websocket:
 ```json
 {"type": "ask_now", "data": {"subject": "invoice 4471: Cost center changed from '4711' to '0400'",
- "event_id": "a1b2c3d4e5f6", "question_index": 1, "budget": 5}}
+ "event_id": "a1b2c3d4e5f6", "question_index": 1, "budget": 5,
+ "known": [{"id": "f3e1c0a9b2d", "text": "Why 0400? \"Over 5,000 it's capex.\" (Anna, 2026-10-04)"}]}}
 ```
+`known` is what the expert already told us about the subject in earlier sessions (T-110,
+[knowledge-graph.md](knowledge-graph.md)); send it to the agent with the cue. It may be empty.
 It fires only when **all** hold: screen still `PAUSE_SCREEN_STILL_SEC` (no changed frame, no new event),
 user silent `PAUSE_SILENCE_SEC`, agent not speaking, `ASK_COOLDOWN_SEC` since the last ask, under
 `MAX_LIVE_QUESTIONS`, and there is an un-asked event to ask about.

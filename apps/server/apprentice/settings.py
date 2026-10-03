@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     ASK_COOLDOWN_SEC: float = 60
     MAX_LIVE_QUESTIONS: int = 5
     SESSIONS_DIR: str = "data/sessions"
+    KNOWLEDGE_PATH: str = "data/knowledge/graph.json"
+    KNOWN_MAX_FACTS: int = 10
+    KNOWN_MAX_CHARS: int = 2000
     PAUSE_TICK_SEC: float = 0.25
     OFF_THE_RECORD_WINDOW_SEC: float = 30
     EVENT_MIN_CONFIDENCE: float = 0.6
