@@ -6,6 +6,7 @@ contextual updates and sends the ASK_NOW cue. MVP: one in-memory event list, no 
 Run:  uvicorn apprentice.main:app --reload --port 8001   →  http://localhost:8001/
 """
 
+import os
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -13,6 +14,20 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 HERE = Path(__file__).parent
+ENV_FILE = HERE.parents[2] / ".env"
+
+
+def env(name: str) -> str:
+    """Process environment first, then the repo-root .env."""
+    if name in os.environ:
+        return os.environ[name]
+    if ENV_FILE.exists():
+        for line in ENV_FILE.read_text().splitlines():
+            key, sep, value = line.partition("=")
+            if sep and key.strip() == name:
+                return value.strip().strip("\"'")
+    return ""
+
 
 app = FastAPI(title="AI Apprentice")
 app.mount("/prompts", StaticFiles(directory=HERE / "prompts"), name="prompts")
@@ -29,6 +44,12 @@ def interviewer_page() -> FileResponse:
 @app.get("/health")
 def health() -> dict:
     return {"server": "ok", "events": len(EVENTS)}
+
+
+@app.get("/config")
+def config() -> dict:
+    """Public settings for the test page. The agent ID is not a secret (the agent is public)."""
+    return {"agent_id": env("ELEVENLABS_INTERVIEWER_AGENT_ID")}
 
 
 @app.post("/events")

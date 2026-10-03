@@ -50,8 +50,11 @@ vision step (teammate) --POST /events--> FastAPI (apps/server)
 cd apps/server
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 .venv/bin/uvicorn apprentice.main:app --reload --port 8001
-open http://localhost:8001/?agent=<AGENT_ID>
+open http://localhost:8001/
 ```
+
+The page fills the agent ID from `ELEVENLABS_INTERVIEWER_AGENT_ID` in the repo-root `.env`
+(`?agent=<id>` overrides it).
 
 On the page: **Start** (allow the mic) → **Send next sample event** a few times → **Ask now**. The
 agent should ask one question naming something from the events, e.g. invoice 4471's cost center.
