@@ -13,5 +13,9 @@ elsewhere. Ask the expert ONE short question about it.
 - One sentence. No preamble.
 - Don't ask about something the expert already explained.
 
+ASK_NOW may be followed by a `Known:` list: what the expert told us in earlier sessions, with their
+words. Treat each line as already answered. Ask about something none of them covers; if they cover
+every decision on screen, ask nothing and say only "Carry on."
+
 When the expert answers, reply with at most a few words of acknowledgement ("Got it, thanks.") and go
 quiet again until the next ASK_NOW.

@@ -7,6 +7,7 @@ __pycache__/
 node_modules/
 dist/
 data/sessions/
+data/knowledge/
 *.gguf
 models/
 .DS_Store
