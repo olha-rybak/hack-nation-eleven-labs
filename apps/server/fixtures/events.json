@@ -1,0 +1,12 @@
+[
+  {"ts_ms": 4000,   "kind": "open",     "entity": "invoice 4471", "field": null,          "before": null,   "after": null,      "confidence": 0.95, "frame_ref": "f_000004000"},
+  {"ts_ms": 9000,   "kind": "navigate", "entity": "invoice 4471", "field": "line items",  "before": null,   "after": null,      "confidence": 0.9,  "frame_ref": "f_000009000"},
+  {"ts_ms": 21000,  "kind": "edit",     "entity": "invoice 4471", "field": "cost center", "before": "4711", "after": "0400",    "confidence": 0.92, "frame_ref": "f_000021000"},
+  {"ts_ms": 30000,  "kind": "edit",     "entity": "invoice 4471", "field": "asset number","before": "",     "after": "A-2026-118","confidence": 0.88, "frame_ref": "f_000030000"},
+  {"ts_ms": 34000,  "kind": "save",     "entity": "invoice 4471", "field": null,          "before": null,   "after": null,      "confidence": 0.97, "frame_ref": "f_000034000"},
+  {"ts_ms": 41000,  "kind": "open",     "entity": "invoice 4472", "field": null,          "before": null,   "after": null,      "confidence": 0.95, "frame_ref": "f_000041000"},
+  {"ts_ms": 52000,  "kind": "navigate", "entity": "supplier Nordtec GmbH", "field": "invoice history", "before": null, "after": null, "confidence": 0.85, "frame_ref": "f_000052000"},
+  {"ts_ms": 63000,  "kind": "hold",     "entity": "invoice 4472", "field": "status",      "before": "open", "after": "on hold", "confidence": 0.93, "frame_ref": "f_000063000"},
+  {"ts_ms": 75000,  "kind": "open",     "entity": "invoice 4473", "field": null,          "before": null,   "after": null,      "confidence": 0.95, "frame_ref": "f_000075000"},
+  {"ts_ms": 88000,  "kind": "route",    "entity": "invoice 4473", "field": "approver",    "before": null,   "after": "second approval", "confidence": 0.9, "frame_ref": "f_000088000"}
+]
