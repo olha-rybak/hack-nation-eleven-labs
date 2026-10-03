@@ -1,0 +1,62 @@
+import { useEffect, useRef, useState } from 'react'
+import { ServerUnreachable } from './ingest'
+import { ScreenCapture, type CaptureStats } from './screenCapture'
+
+export type CaptureState =
+  | { status: 'idle' }
+  | { status: 'requesting' }
+  | { status: 'live'; capture: ScreenCapture; stats: CaptureStats }
+  | { status: 'stopping'; capture: ScreenCapture; stats: CaptureStats }
+  | { status: 'ended'; sessionId: string; stats: CaptureStats; seconds: number }
+  | { status: 'error'; reason: 'denied' | 'unsupported' | 'offline' | 'failed'; detail?: string }
+
+export function useScreenCapture() {
+  const [state, setState] = useState<CaptureState>({ status: 'idle' })
+  const current = useRef<ScreenCapture | null>(null)
+
+  const finish = (capture: ScreenCapture) => {
+    current.current = null
+    setState({
+      status: 'ended',
+      sessionId: capture.sessionId,
+      stats: { ...capture.stats },
+      seconds: Math.round((performance.now() - capture.startedAt) / 1000),
+    })
+  }
+
+  async function start() {
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      setState({ status: 'error', reason: 'unsupported' })
+      return
+    }
+    setState({ status: 'requesting' })
+    try {
+      const capture = await ScreenCapture.start(
+        (stats) => setState((s) => (s.status === 'live' && s.capture === capture ? { ...s, stats } : s)),
+        () => finish(capture),
+      )
+      current.current = capture
+      setState({ status: 'live', capture, stats: { ...capture.stats } })
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'NotAllowedError') {
+        setState({ status: 'error', reason: 'denied' })
+      } else if (err instanceof ServerUnreachable) {
+        setState({ status: 'error', reason: 'offline' })
+      } else {
+        setState({ status: 'error', reason: 'failed', detail: err instanceof Error ? err.message : String(err) })
+      }
+    }
+  }
+
+  async function stop() {
+    const capture = current.current
+    if (!capture) return
+    setState({ status: 'stopping', capture, stats: { ...capture.stats } })
+    await capture.stop()
+    finish(capture)
+  }
+
+  useEffect(() => () => void current.current?.stop(), [])
+
+  return { state, start, stop, reset: () => setState({ status: 'idle' }) }
+}

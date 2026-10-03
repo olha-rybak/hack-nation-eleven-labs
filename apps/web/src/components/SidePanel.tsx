@@ -3,7 +3,7 @@ import { useTranscript } from '../lib/useTranscript'
 import { formatTs } from '../lib/time'
 
 interface Props {
-  sessionId: string
+  sessionId: string | null
   title: string
 }
 

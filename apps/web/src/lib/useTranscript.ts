@@ -7,10 +7,11 @@ interface State {
   lines: TranscriptLine[]
 }
 
-export function useTranscript(sessionId: string): TranscriptLine[] {
-  const [state, setState] = useState<State>({ sessionId, lines: [] })
+export function useTranscript(sessionId: string | null): TranscriptLine[] {
+  const [state, setState] = useState<State>({ sessionId: sessionId ?? '', lines: [] })
 
   useEffect(() => {
+    if (!sessionId) return
     const connection = openFeed(sessionId, (message) => {
       if (message.type !== 'transcript') return
       setState((prev) =>
@@ -22,5 +23,5 @@ export function useTranscript(sessionId: string): TranscriptLine[] {
     return () => connection.close()
   }, [sessionId])
 
-  return state.sessionId === sessionId ? state.lines : []
+  return sessionId && state.sessionId === sessionId ? state.lines : []
 }

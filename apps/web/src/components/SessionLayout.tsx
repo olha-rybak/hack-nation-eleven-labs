@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { SidePanel } from './SidePanel'
 
 interface Props {
-  sessionId: string
+  sessionId: string | null
   panelTitle: string
   bleed?: boolean
   children: ReactNode

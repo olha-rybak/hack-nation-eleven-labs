@@ -1,16 +1,13 @@
+import { useState } from 'react'
+import { CaptureView } from '../capture/CaptureView'
 import { SessionLayout } from '../components/SessionLayout'
 
 export function CapturePage() {
+  const [sessionId, setSessionId] = useState<string | null>(null)
+
   return (
-    <SessionLayout sessionId="demo" panelTitle="Conversation">
-      <div className="placeholder">
-        <h1>Capture</h1>
-        <p>Share the screen where you do the task. The apprentice watches and asks why at natural pauses.</p>
-        <button type="button" className="button" disabled>
-          Share screen
-        </button>
-        <p className="todo">Screen sharing arrives with T-101.</p>
-      </div>
+    <SessionLayout sessionId={sessionId} panelTitle="Conversation">
+      <CaptureView onSession={setSessionId} />
     </SessionLayout>
   )
 }

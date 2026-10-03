@@ -1,6 +1,7 @@
 // The ERP is the app the expert shares. It must not import anything from the
 // apprentice side: the apprentice only ever sees it through screen pixels.
 
+import { useEffect } from 'react'
 import { Link, Route, Routes, useParams, useSearchParams } from 'react-router'
 import { COMPANY, SYSTEM_DATE, type Dataset } from './data'
 import { formatDate } from './format'
@@ -17,6 +18,15 @@ export function ErpApp() {
 
 function ErpSession({ dataset }: { dataset: Dataset }) {
   const state = useErpState(dataset)
+
+  // The tab title is what the expert picks in the browser's share dialog.
+  useEffect(() => {
+    const previous = document.title
+    document.title = 'Nordwind ERP'
+    return () => {
+      document.title = previous
+    }
+  }, [])
 
   return (
     <ErpContext.Provider value={state}>

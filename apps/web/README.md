@@ -6,7 +6,8 @@ Needs Node 20.19+ or 22.12+ (`.nvmrc` says 22).
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173, proxies /api to http://127.0.0.1:8000
+npm run dev        # http://localhost:5173, proxies /api/* to the server root
+npm test           # unit tests (vitest)
 npm run build
 npm run typecheck
 npm run lint
@@ -20,9 +21,13 @@ npm run lint
 | `/erp` | Fake ERP the expert shares, with INV-4471/4472/4473. Imports nothing from the apprentice side (T-100) |
 | `/erp?case=training` | Same ERP for the new hire, with the unseen case INV-4474 (T-303) |
 
-`.env.development` sets `VITE_MOCK=1`, so the side panel plays a scripted conversation without a
-backend. Set it to `0` in `.env.development.local` to use the real websocket at
-`/api/sessions/:id/feed`.
+`.env.development` sets `VITE_MOCK=1`: no backend needed, the side panel plays a scripted
+conversation and capture counts frames locally without uploading. To use the real server, create
+`.env.development.local` with `VITE_MOCK=0` (and `VITE_API_TARGET=http://127.0.0.1:8001` if the
+server runs on 8001). The proxy strips `/api`, so `/api/ingest/frame` reaches `/ingest/frame`.
+
+Capture (`src/capture/`) reads `FRAME_FPS` and `FRAME_CHANGE_MIN_CELLS` from the repo-root `.env`.
+Share the ERP tab, not this one: the browser's picker hides the capture tab itself.
 
 With `VITE_MOCK=1` the Work Map page (`/map/demo`) shows the T-200 fixture
 (`apps/server/tests/fixtures/workmap_invoices.json`), and its screen moments come from
