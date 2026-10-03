@@ -21,7 +21,7 @@ Status: `planned` = not written yet, `draft` = exists, may change, `stable` = ot
 | [workmap-builder.md](workmap-builder.md) | Session → draft Work Map + ranked gaps for the debrief; verbatim quotes; LLM config | T-201 | draft |
 | `environment-pack.md` | Glossary, written rules, task: what the agent must not ask | T-109 | planned |
 | `question-selection.md` | How the one question is picked from events | T-108 | planned |
-| `knowledge-graph.md` | Facts from expert answers across sessions; the Known slice sent with ASK_NOW | T-110 | planned |
+| [knowledge-graph.md](knowledge-graph.md) | Facts from expert answers across sessions; the Known slice sent with ASK_NOW | T-110 | draft |
 
 ## Open decisions
 

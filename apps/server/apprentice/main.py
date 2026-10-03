@@ -17,6 +17,8 @@ from apprentice.capture.pause import PauseService
 from apprentice.capture.routes import router as capture_router
 from apprentice.capture.vision import VisionService
 from apprentice.interviewer import router as interviewer_router
+from apprentice.knowledge.graph import KnowledgeGraph
+from apprentice.knowledge.routes import router as knowledge_router
 from apprentice.llm.claude_vision import ClaudeVisionClient
 from apprentice.llm.client import LlmClient
 from apprentice.llm.structured import structured_llm
@@ -29,18 +31,23 @@ from apprentice.workmap.routes import router as workmap_router
 HERE = Path(__file__).parent
 
 
+def repo_path(setting: str) -> Path:
+    path = Path(setting)
+    return path if path.is_absolute() else Path(settings.__file__).resolve().parents[3] / path
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     s = settings.get_settings()
     app.state.llm = ClaudeVisionClient(s) if s.VISION_PROVIDER == "anthropic" else LlmClient()
-    root = Path(settings.get_settings().SESSIONS_DIR)
-    if not root.is_absolute():
-        root = Path(settings.__file__).resolve().parents[3] / root
-    app.state.store = SessionStore(root)
+    app.state.store = SessionStore(repo_path(s.SESSIONS_DIR))
+    app.state.knowledge = KnowledgeGraph(repo_path(s.KNOWLEDGE_PATH))
     app.state.hub = Hub()
     redactor = app.state.redactor = Redactor(app.state.store, s)
     await asyncio.to_thread(redactor.warm_up)
-    pause = app.state.pause = PauseService(app.state.store, app.state.hub, s)
+    pause = app.state.pause = PauseService(
+        app.state.store, app.state.hub, s, knowledge=app.state.knowledge
+    )
 
     def event_seen(session_id: str) -> None:  # an accepted event is screen activity
         pause.detector(session_id).on_screen_change(pause.clock())
@@ -60,6 +67,7 @@ app.include_router(session_router)
 app.include_router(capture_router)
 app.include_router(interviewer_router)
 app.include_router(workmap_router)
+app.include_router(knowledge_router)
 app.mount("/prompts", StaticFiles(directory=HERE / "prompts"), name="prompts")
 app.mount("/fixtures", StaticFiles(directory=HERE.parent / "fixtures"), name="fixtures")
 
