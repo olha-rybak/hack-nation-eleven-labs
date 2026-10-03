@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -25,6 +26,11 @@ class Settings(BaseSettings):
     EVENT_MIN_CONFIDENCE: float = 0.6
     VISION_MAX_TOKENS: int = 512
     VISION_THINKING: bool = False
+    ANTHROPIC_API_KEY: str = ""
+    MAP_LLM_PROVIDER: Literal["anthropic", "local"] = "anthropic"
+    MAP_LLM_MODEL: str = "claude-opus-5-5"
+    MAP_LLM_EFFORT: Literal["low", "medium", "high", "xhigh", "max"] = "high"
+    MAP_LLM_TIMEOUT_SEC: float = 300
 
 
 @lru_cache

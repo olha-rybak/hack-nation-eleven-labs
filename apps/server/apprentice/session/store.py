@@ -53,6 +53,9 @@ class SessionStore:
                 meta.write_text(json.dumps(data), encoding="utf-8")
         return sid
 
+    def session_dir(self, session_id: str) -> Path:
+        return self._existing_dir(session_id)
+
     def exists(self, session_id: str) -> bool:
         return (self._dir(session_id) / "meta.json").is_file()
 
