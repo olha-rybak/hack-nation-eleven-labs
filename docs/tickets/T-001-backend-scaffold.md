@@ -1,5 +1,5 @@
 # T-001 · Backend scaffold + llama-server bring-up
-**Lane B · depends on: —**
+**Lane B · owner: Hlib · depends on: —**
 
 Stand up `apps/server` as a FastAPI app (`apprentice.main:app`) with `uv`/pyproject, ruff, pytest.
 Get Nemotron Omni running in `llama-server --parallel 2` and wrap it in a thin client

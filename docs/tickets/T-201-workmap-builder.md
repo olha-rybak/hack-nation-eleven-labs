@@ -1,5 +1,5 @@
 # T-201 · Work Map builder + gap finder
-**Lane B · depends on: T-200, T-105**
+**Lane B · owner: Hlib · depends on: T-200, T-105**
 
 On **End task**, merge events, transcript and logged answers into a draft Work Map:
 
