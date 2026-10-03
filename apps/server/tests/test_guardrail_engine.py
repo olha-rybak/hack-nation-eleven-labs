@@ -8,14 +8,14 @@ from apprentice.guardrails.engine import (
     parse_amount,
     parse_month,
 )
-from apprentice.workmap.schema import load_workmap
+from apprentice.workmap.schema import WorkMap
 
-FIXTURE = Path(__file__).parent / "fixtures" / "workmap_invoices.json"
+FIXTURE = Path(__file__).parent / "fixtures" / "workmap_guardrails.json"
 
 
 @pytest.fixture
 def wm():
-    return load_workmap(FIXTURE)
+    return WorkMap.model_validate_json(FIXTURE.read_text(encoding="utf-8"))
 
 
 def opened(entity, **fields):
@@ -84,8 +84,8 @@ def test_save_triggered_reported_on_save_as_last_resort(wm):
 def test_unseen_case_inv4474(wm):
     """T-303 shape: EUR 9,400 from a supplier the expert never processed still hits capex."""
     eng = GuardrailEngine(wm)
-    eng.on_event(opened("invoice 4474", Supplier="Kessler Antriebstechnik", Amount="EUR 9,400.00",
-                        **{"New supplier": "yes"}))  # fmt: skip
+    eng.on_event(opened("invoice 4474", Supplier="Brandt Fertigungstechnik", Gross="EUR 9,400.00",
+                        **{"Vendor no.": ""}))  # fmt: skip
     [hit] = eng.on_event(edit("invoice 4474", "Cost center", "", "4711"))
     assert hit.guardrail_id == "g-capex-limit"
     assert eng.facts("invoice 4474")["is_new_supplier"] is True

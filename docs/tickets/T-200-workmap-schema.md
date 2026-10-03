@@ -15,8 +15,9 @@ Step(index, title,                    # "Code the invoice to a cost center"
      guardrail_ids: list[str],
      is_judgment_call: bool)
 
-Guardrail(id, kind: Literal["limit","exception","stop_and_ask"],
+Guardrail(id, kind: Literal["limit","exception","stop_and_ask","never_do"],
           statement: str,             # "No asset number, no capex booking"
+          frame_ts: int,              # its screen moment
           reason: Quote, step_index: int,
           check: GuardrailCheck | None)   # machine-evaluable form, see T-300
 
@@ -28,6 +29,9 @@ Enforce in validation, not by convention: **every** `Step` and **every** `Guardr
 without a citation — the brief requires that every step and guardrail links to a screen moment and the
 expert's own words, and a silently uncited step is exactly the "summary written from the transcript"
 failure mode.
+
+**Proposal (needs lane B to agree):** add `"never_do"` to `Guardrail.kind`. The brief asks the agent to
+learn "what they would never do", and that doesn't fit limit / exception / stop-and-ask.
 
 **Acceptance:** schema round-trips through JSON; a fixture Work Map missing a quote fails validation with
 a message naming the step.

@@ -10,3 +10,7 @@ correcting a wrong event inline should be possible (edits write back to the sess
 
 **Acceptance:** during a live session the feed updates within ~2s of an on-screen change; **End task**
 transitions to the debrief; **Off the record** visibly removes the last 30 seconds from the feed.
+
+**Note:** show each agent question attached to the event that triggered it (`about_event_id` from
+`log_answer`, T-107). The expert sees why the apprentice asked, and it answers Apprentice Test question 2
+on stage without explanation.

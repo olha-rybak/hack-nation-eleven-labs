@@ -61,6 +61,12 @@ class VisionService:
         if st.task is None or st.task.done():
             st.task = asyncio.create_task(self._run(session_id, st))
 
+    def reset(self, session_id: str) -> None:
+        """Forget the keyframe and any pending frame, e.g. when the session is archived."""
+        if st := self._sessions.pop(session_id, None):
+            if st.task:
+                st.task.cancel()
+
     async def _run(self, session_id: str, st: _SessionState) -> None:
         while st.pending is not None:
             cur, st.pending = st.pending, None

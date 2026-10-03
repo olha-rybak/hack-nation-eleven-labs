@@ -1,11 +1,12 @@
 .env
-data/sessions/
 .venv/
 __pycache__/
-*.gguf
-models/
+*.egg-info/
 .pytest_cache/
 .ruff_cache/
 node_modules/
 dist/
-*.egg-info/
+data/sessions/
+*.gguf
+models/
+.DS_Store

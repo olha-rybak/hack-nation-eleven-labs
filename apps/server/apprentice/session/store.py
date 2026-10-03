@@ -123,4 +123,12 @@ class SessionStore:
     def pause_log(self, session_id: str) -> list[dict]:
         return self._read(session_id, "pause.jsonl")
 
+    def archive(self, session_id: str) -> str:
+        """Rename the session to <id>-<UTC timestamp>, freeing the id. Nothing is deleted."""
+        d = self._existing_dir(session_id)
+        new_id = f"{session_id}-{datetime.now(UTC):%Y%m%dT%H%M%S}"
+        with self._lock(session_id):
+            d.rename(self._dir(new_id))
+        return new_id
+
     # TODO(T-400): delete_window

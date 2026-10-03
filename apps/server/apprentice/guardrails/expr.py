@@ -21,7 +21,7 @@ from typing import Any
 VARIABLES = frozenset(
     {
         "amount", "after", "before", "field", "supplier", "cost_center", "asset_number",
-        "month", "country", "second_approval", "is_new_supplier",
+        "month", "country", "second_approval", "is_new_supplier", "is_group_company",
     }
 )  # fmt: skip
 

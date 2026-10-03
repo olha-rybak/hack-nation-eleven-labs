@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 
 # Screen label (casefolded) -> condition variable. Extend as the fake ERP's labels settle (T-100).
 FIELD_VARS = {
-    "amount": "amount", "gross amount": "amount", "total": "amount", "net amount": "amount",
+    "amount": "amount", "gross": "amount", "gross amount": "amount", "total": "amount",
     "supplier": "supplier", "vendor": "supplier",
     "cost center": "cost_center", "cost centre": "cost_center", "cost center code": "cost_center",
     "asset number": "asset_number", "asset no": "asset_number", "asset no.": "asset_number",
@@ -30,6 +30,8 @@ FIELD_VARS = {
     "second approval": "second_approval", "second approver": "second_approval",
     "approver 2": "second_approval",
     "new supplier": "is_new_supplier", "new vendor": "is_new_supplier",
+    "vendor no.": "vendor_no", "vendor no": "vendor_no", "vendor number": "vendor_no",
+    "group company": "group_company",
 }  # fmt: skip
 
 MONTHS = {
@@ -117,7 +119,7 @@ def to_var(label: str, value: str | None) -> tuple[str, Any] | None:
 
 
 class GuardrailEngine:
-    def __init__(self, workmap: WorkMap):
+    def __init__(self, workmap: WorkMap) -> None:
         if workmap.confirmed_at is None:
             raise NotConfirmed(f"work map {workmap.id} is not confirmed")
         self.workmap = workmap
@@ -181,6 +183,12 @@ class GuardrailEngine:
         if event["kind"] == "edit" and event.get("field"):
             if kv := to_var(event["field"], event.get("after")):
                 st.facts[kv[0]] = kv[1]
+        if "vendor_no" in st.facts:
+            st.facts["is_new_supplier"] = not st.facts["vendor_no"]
+            st.facts.pop("vendor_no")
+        if "group_company" in st.facts:
+            st.facts.setdefault("country", None)
+            st.facts["is_group_company"] = bool(st.facts.pop("group_company"))
 
     def _matching(self, entity: str) -> list[_Compiled]:
         return [c for c in self.checks if c.entity_re.search(entity)]
@@ -198,7 +206,10 @@ class GuardrailEngine:
 
     def _hit(self, c: _Compiled, entity: str, event_id: str | None, timing: str) -> Hit:
         g = c.guardrail
-        frames = [g.frame_ref] + [s.frame_ref for s in self.workmap.steps_for(g.id)]
+        governed = [
+            s for s in self.workmap.steps if g.id in s.guardrail_ids or s.index == g.step_index
+        ]
+        frames = [s.frame_ref for s in governed]
         return Hit(
             guardrail_id=g.id,
             severity=g.check.severity,
@@ -212,7 +223,7 @@ class GuardrailEngine:
 
 
 def _field_ok(check_field: str | None, event: dict) -> bool:
-    if check_field is None:
+    if not check_field:
         return True
     norm = lambda s: " ".join((s or "").split()).casefold()  # noqa: E731
     return norm(check_field) == norm(event.get("field"))

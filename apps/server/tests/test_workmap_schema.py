@@ -1,86 +1,116 @@
+import copy
 import json
 from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 
-from apprentice.workmap import WorkMap, dump_workmap, load_workmap
+from apprentice.workmap.schema import WorkMap
 
 FIXTURE = Path(__file__).parent / "fixtures" / "workmap_invoices.json"
 
 
+@pytest.fixture
 def raw() -> dict:
-    return json.loads(FIXTURE.read_text(encoding="utf-8"))
+    return json.loads(FIXTURE.read_text())
 
 
-def test_fixture_loads_and_summary():
-    wm = load_workmap(FIXTURE)
-    assert wm.summary == {"steps": 7, "judgment_calls": 3, "guardrails": 4}
-    assert wm.is_confirmed
-    assert wm.guardrail("g-capex-limit").check.severity == "stop"
-    assert "summary" in json.loads(wm.model_dump_json())
+def test_fixture_has_the_shape_the_brief_describes(raw):
+    wm = WorkMap.model_validate(raw)
+    assert len(wm.steps) == 7
+    assert len(wm.judgment_calls) == 3
+    assert len(wm.guardrails) == 4
 
 
-def test_round_trip(tmp_path):
-    wm = load_workmap(FIXTURE)
-    out = tmp_path / "wm.json"
-    dump_workmap(wm, out)
-    assert load_workmap(out) == wm
+def test_round_trips_through_json(raw):
+    wm = WorkMap.model_validate(raw)
+    again = WorkMap.model_validate_json(wm.model_dump_json())
+    assert again == wm
 
 
-def test_empty_quote_names_step():
-    data = raw()
-    data["steps"][2]["reason"]["text"] = "   "
-    with pytest.raises(ValidationError) as e:
-        WorkMap.model_validate(data)
-    msg = str(e.value)
-    assert "step 2" in msg and "Code the invoice to a cost center" in msg
-    assert "reason quote is empty" in msg
+def test_missing_quote_names_the_step(raw):
+    bad = copy.deepcopy(raw)
+    del bad["steps"][1]["reason"]
+    with pytest.raises(
+        ValidationError,
+        match=r"step 2 \('Code the invoice to a cost center'\) is invalid: reason: Field required",
+    ):
+        WorkMap.model_validate(bad)
 
 
-def test_empty_frame_ref_names_guardrail():
-    data = raw()
-    data["guardrails"][1]["frame_ref"] = ""
-    with pytest.raises(ValidationError, match="g-asset-number"):
-        WorkMap.model_validate(data)
+def test_blank_quote_text_names_the_step(raw):
+    bad = copy.deepcopy(raw)
+    bad["steps"][4]["reason"]["text"] = "   "
+    with pytest.raises(
+        ValidationError, match=r"step 5 .* reason\.text: .*must not be empty"
+    ):
+        WorkMap.model_validate(bad)
 
 
-def test_unknown_guardrail_id():
-    data = raw()
-    data["steps"][0]["guardrail_ids"] = ["g-nope"]
-    with pytest.raises(ValidationError, match="g-nope"):
-        WorkMap.model_validate(data)
+def test_quote_text_is_kept_verbatim(raw):
+    raw["steps"][0]["reason"]["text"] = "  Not a repair.  "
+    wm = WorkMap.model_validate(raw)
+    assert wm.steps[0].reason.text == "  Not a repair.  "
 
 
-def test_duplicate_guardrail_id():
-    data = raw()
-    data["guardrails"][1]["id"] = data["guardrails"][0]["id"]
-    with pytest.raises(ValidationError, match="duplicate id"):
-        WorkMap.model_validate(data)
+def test_guardrail_without_quote_names_the_guardrail(raw):
+    bad = copy.deepcopy(raw)
+    del bad["guardrails"][2]["reason"]
+    with pytest.raises(
+        ValidationError, match=r"guardrail g3 .* is invalid: reason: Field required"
+    ):
+        WorkMap.model_validate(bad)
 
 
-def test_bad_regex():
-    data = raw()
-    data["guardrails"][0]["check"]["entity_pattern"] = "invoice (\\d+"
-    with pytest.raises(ValidationError, match="g-capex-limit"):
-        WorkMap.model_validate(data)
+def test_guardrail_without_screen_moment_fails(raw):
+    bad = copy.deepcopy(raw)
+    del bad["guardrails"][0]["frame_ts"]
+    with pytest.raises(
+        ValidationError, match=r"guardrail g1 .* frame_ts: Field required"
+    ):
+        WorkMap.model_validate(bad)
 
 
-def test_step_index_gap():
-    data = raw()
-    data["steps"][3]["index"] = 9
-    with pytest.raises(ValidationError, match="position 3"):
-        WorkMap.model_validate(data)
+def test_negative_frame_ts_fails(raw):
+    bad = copy.deepcopy(raw)
+    bad["steps"][0]["frame_ts"] = -1
+    with pytest.raises(ValidationError, match=r"step 1 .* frame_ts"):
+        WorkMap.model_validate(bad)
 
 
-def test_guardrail_step_index_dangling():
-    data = raw()
-    data["guardrails"][0]["step_index"] = 99
-    with pytest.raises(ValidationError, match="step_index 99"):
-        WorkMap.model_validate(data)
+def test_unknown_guardrail_reference_fails(raw):
+    bad = copy.deepcopy(raw)
+    bad["steps"][2]["guardrail_ids"] = ["g9"]
+    with pytest.raises(ValidationError, match=r"step 3 .* unknown guardrails \['g9'\]"):
+        WorkMap.model_validate(bad)
 
 
-def test_steps_for():
-    wm = load_workmap(FIXTURE)
-    assert [s.index for s in wm.steps_for("g-nordtec-duplicate")] == [4]
-    assert [s.index for s in wm.steps_for("g-capex-limit")] == [2]
+def test_guardrail_pointing_at_missing_step_fails(raw):
+    bad = copy.deepcopy(raw)
+    bad["guardrails"][3]["step_index"] = 12
+    with pytest.raises(ValidationError, match=r"guardrail g4 .* unknown step 12"):
+        WorkMap.model_validate(bad)
+
+
+def test_duplicate_step_index_fails(raw):
+    bad = copy.deepcopy(raw)
+    bad["steps"][1]["index"] = 1
+    with pytest.raises(ValidationError, match="step indexes must be unique"):
+        WorkMap.model_validate(bad)
+
+
+def test_unknown_field_is_rejected(raw):
+    bad = copy.deepcopy(raw)
+    bad["steps"][0]["confidence"] = 0.9
+    with pytest.raises(
+        ValidationError, match=r"step 1 .* confidence: Extra inputs are not permitted"
+    ):
+        WorkMap.model_validate(bad)
+
+
+def test_map_without_steps_fails(raw):
+    bad = copy.deepcopy(raw)
+    bad["steps"] = []
+    bad["guardrails"] = []
+    with pytest.raises(ValidationError, match="steps"):
+        WorkMap.model_validate(bad)

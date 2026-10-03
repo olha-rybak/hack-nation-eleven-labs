@@ -26,9 +26,9 @@ def ok(request: httpx.Request) -> httpx.Response:
 
 async def test_sends_id_slot_and_returns_content():
     client, seen = make_client(ok)
-    out = await client.chat(1, [{"role": "user", "content": "hi"}], max_tokens=5, temperature=0.2)
+    out = await client.chat(0, [{"role": "user", "content": "hi"}], max_tokens=5, temperature=0.2)
     assert out == "hello"
-    assert seen[0]["id_slot"] == 1
+    assert seen[0]["id_slot"] == 0
     assert seen[0]["max_tokens"] == 5
     assert seen[0]["temperature"] == 0.2
 
@@ -62,7 +62,7 @@ async def test_malformed_response_raises_llm_error():
         await client.chat(0, [{"role": "user", "content": "hi"}])
 
 
-@pytest.mark.parametrize("slot", [-1, 2, 99])
+@pytest.mark.parametrize("slot", [-1, 1, 99])
 async def test_bad_slot_rejected(slot):
     client, seen = make_client(ok)
     with pytest.raises(ValueError):

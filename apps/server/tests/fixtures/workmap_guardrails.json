@@ -1,0 +1,208 @@
+{
+  "id": "wm-invoices-001",
+  "session_id": "sess-sabine-001",
+  "title": "Processing the three open supplier invoices",
+  "created_at": "2026-10-02T14:30:00Z",
+  "confirmed_at": "2026-10-02T15:05:00Z",
+  "steps": [
+    {
+      "index": 1,
+      "title": "Open invoice INV-4471",
+      "frame_ts": 12000,
+      "frame_ref": "frames/0000012000.jpg",
+      "decision": "Start with the oldest open invoice, from Weber Maschinenbau",
+      "reason": {
+        "text": "I always take the oldest one first, otherwise the supplier starts calling us about payment terms.",
+        "speaker": "Sabine",
+        "ts_ms": 12500,
+        "source": "narration"
+      },
+      "guardrail_ids": [],
+      "is_judgment_call": false
+    },
+    {
+      "index": 2,
+      "title": "Check supplier and amount",
+      "frame_ts": 24000,
+      "frame_ref": "frames/0000024000.jpg",
+      "decision": "Amount is 7,200 euros for a machine, so this is not a normal running cost",
+      "reason": {
+        "text": "Seven thousand two hundred for a machine, that's not a running cost, that's equipment. Alarm bells.",
+        "speaker": "Sabine",
+        "ts_ms": 25000,
+        "source": "narration"
+      },
+      "guardrail_ids": [],
+      "is_judgment_call": false
+    },
+    {
+      "index": 3,
+      "title": "Code the invoice to a cost center",
+      "frame_ts": 42000,
+      "frame_ref": "frames/0000042000.jpg",
+      "decision": "Re-coded from opex (4711) to capex (0400)",
+      "reason": {
+        "text": "It comes prefilled with 4711, but anything that's a machine over five thousand is an asset. I change it to 0400.",
+        "speaker": "Sabine",
+        "ts_ms": 43500,
+        "source": "live_question"
+      },
+      "guardrail_ids": [
+        "g-capex-limit"
+      ],
+      "is_judgment_call": true
+    },
+    {
+      "index": 4,
+      "title": "Enter the asset number",
+      "frame_ts": 61000,
+      "frame_ref": "frames/0000061000.jpg",
+      "decision": "Looked up the asset number in the register before saving",
+      "reason": {
+        "text": "Capex without an asset number gets bounced by accounting every time, so I never save without it.",
+        "speaker": "Sabine",
+        "ts_ms": 62000,
+        "source": "debrief"
+      },
+      "guardrail_ids": [
+        "g-asset-number"
+      ],
+      "is_judgment_call": false
+    },
+    {
+      "index": 5,
+      "title": "Open INV-4472 and spot the duplicate",
+      "frame_ts": 95000,
+      "frame_ref": "frames/0000095000.jpg",
+      "decision": "Put Nordtec GmbH invoice on hold instead of approving",
+      "reason": {
+        "text": "Nordtec, December, same amount as the November line. That smells like a duplicate, so I hold it and ask them.",
+        "speaker": "Sabine",
+        "ts_ms": 96500,
+        "source": "live_question"
+      },
+      "guardrail_ids": [
+        "g-nordtec-duplicate"
+      ],
+      "is_judgment_call": true
+    },
+    {
+      "index": 6,
+      "title": "Open INV-4473 and route for second approval",
+      "frame_ts": 131000,
+      "frame_ref": "frames/0000131000.jpg",
+      "decision": "Routed Vltava s.r.o. invoice to a second approver instead of approving myself",
+      "reason": {
+        "text": "Vltava is the Czech subsidiary, I'm not allowed to approve those alone. It always goes to a second person.",
+        "speaker": "Sabine",
+        "ts_ms": 132500,
+        "source": "debrief"
+      },
+      "guardrail_ids": [
+        "g-czech-second-approval"
+      ],
+      "is_judgment_call": true
+    },
+    {
+      "index": 7,
+      "title": "Save and confirm the posting",
+      "frame_ts": 150000,
+      "frame_ref": "frames/0000150000.jpg",
+      "decision": "Saved the invoices that were cleared and left the held one open",
+      "reason": {
+        "text": "Only after all the checks do I hit Save. Once it's booked it's a pain to reverse.",
+        "speaker": "Sabine",
+        "ts_ms": 151000,
+        "source": "narration"
+      },
+      "guardrail_ids": [],
+      "is_judgment_call": false
+    }
+  ],
+  "guardrails": [
+    {
+      "id": "g-capex-limit",
+      "kind": "limit",
+      "statement": "Equipment over 5,000 euros must not be coded to opex 4711",
+      "reason": {
+        "text": "Over five thousand it's an asset, full stop. Nobody books that to 4711.",
+        "speaker": "Sabine",
+        "ts_ms": 44000,
+        "source": "live_question"
+      },
+      "step_index": 3,
+      "frame_ts": 42000,
+      "check": {
+        "trigger_kind": "edit",
+        "entity_pattern": "inv(oice)?[\\s#-]*\\d+",
+        "field": "Cost center",
+        "condition": "amount > 5000 and after == '4711'",
+        "severity": "stop"
+      }
+    },
+    {
+      "id": "g-asset-number",
+      "kind": "stop_and_ask",
+      "statement": "No asset number, no capex booking",
+      "reason": {
+        "text": "No asset number, no capex. If it's missing I stop and ask the asset accountant.",
+        "speaker": "Sabine",
+        "ts_ms": 62500,
+        "source": "debrief"
+      },
+      "step_index": 4,
+      "frame_ts": 61000,
+      "check": {
+        "trigger_kind": "save",
+        "entity_pattern": "inv(oice)?[\\s#-]*\\d+",
+        "field": "",
+        "condition": "cost_center == '0400' and not asset_number",
+        "severity": "stop"
+      }
+    },
+    {
+      "id": "g-nordtec-duplicate",
+      "kind": "exception",
+      "statement": "Nordtec December invoices duplicate the November run and must be held",
+      "reason": {
+        "text": "With Nordtec the December invoice is nearly always the November one sent again. Hold it, never pay.",
+        "speaker": "Sabine",
+        "ts_ms": 97000,
+        "source": "live_question"
+      },
+      "step_index": 5,
+      "frame_ts": 95000,
+      "check": {
+        "trigger_kind": "save",
+        "entity_pattern": "inv(oice)?[\\s#-]*\\d+",
+        "field": "",
+        "condition": "supplier == 'Nordtec GmbH' and month == 12",
+        "severity": "stop"
+      }
+    },
+    {
+      "id": "g-czech-second-approval",
+      "kind": "stop_and_ask",
+      "statement": "Czech subsidiary invoices need a second approval",
+      "reason": {
+        "text": "Anything from the Czech entity needs a second signature, that's the rule from the auditors.",
+        "speaker": "Sabine",
+        "ts_ms": 133000,
+        "source": "debrief"
+      },
+      "step_index": 6,
+      "frame_ts": 131000,
+      "check": {
+        "trigger_kind": "save",
+        "entity_pattern": "inv(oice)?[\\s#-]*\\d+",
+        "field": "",
+        "condition": "country == 'CZ' and not second_approval",
+        "severity": "warn"
+      }
+    }
+  ],
+  "open_questions": [
+    "Is the 5,000 euro capex threshold the same for every supplier, or only for equipment?",
+    "What happens when the Nordtec December invoice turns out not to be a duplicate?"
+  ]
+}

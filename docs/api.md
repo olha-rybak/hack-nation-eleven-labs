@@ -1,7 +1,8 @@
 # Backend API (lane B) — what the web app and the agent proxy talk to
 
-Server: `apps/server`, `http://127.0.0.1:8000`. Run from `apps/server`:
-`.venv/Scripts/python -m uvicorn apprentice.main:app --port 8000` (uv: `uv run uvicorn ...`).
+Server: `apps/server`, `http://127.0.0.1:8001` (also serves the interviewer test page at `/`).
+Run from `apps/server`: `uvicorn apprentice.main:app --port 8001`.
+The vision model runs separately in llama-server on `:8080`; see `.env.example`.
 
 ## Health
 `GET /health` → `{"server": "ok", "model": "ok" | "down"}`
@@ -55,3 +56,11 @@ If the user starts speaking right after an `ask_now` arrives, drop the cue rathe
 - `POST /sessions/{id}/end` stops the ask-now loop (End task).
 - `GET /sessions/{id}/pause-log` lists every blocker-set change (`near_miss: true` = one condition
   short) and every `ask_now`. Tune the thresholds in `.env` from this, not by guessing.
+
+## Interviewer test page (`/events`)
+`static/interviewer.html` polls `GET /events?since=n` and forwards new events to the ElevenLabs agent
+(see [interviewer-agent.md](interviewer-agent.md)). These endpoints read and write session `live`
+(`?session=` to change it), so events from `/ingest/frame?session_id=live` reach the page unchanged.
+- `POST /events` one event or a list; validated as the event shape above (an `id` is added if missing).
+- `GET /events?since=n` events from index n. A merged edit updates its earlier position in place.
+- `DELETE /events` archives the session as `live-<timestamp>` and starts empty. Nothing is deleted.
