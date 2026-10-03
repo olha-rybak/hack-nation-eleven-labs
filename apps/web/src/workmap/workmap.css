@@ -116,12 +116,12 @@
   display: flex;
   justify-content: center;
   gap: 16px;
-  margin-top: 32px;
+  margin-top: 40px;
 }
 
 .wm-shot {
   position: relative;
-  margin: 104px auto 0;
+  margin: 64px auto 0;
   max-width: 880px;
 }
 
@@ -144,16 +144,10 @@
 }
 
 .wm-stats {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  z-index: 1;
   display: grid;
-  grid-template-columns: repeat(3, 148px);
-  margin: 0;
-  padding: 16px 8px;
-  border-radius: var(--r-xl);
-  transform: translate(-50%, -50%);
+  grid-template-columns: repeat(3, 160px);
+  justify-content: center;
+  margin: 40px 0 0;
 }
 
 .wm-stats > div {
@@ -175,7 +169,7 @@
 }
 
 .wm-stats dt {
-  color: var(--text-soft);
+  color: var(--muted);
   font-size: 14px;
   line-height: 1.29;
   letter-spacing: -0.224px;
@@ -280,13 +274,8 @@
 }
 
 .wm-step.judgment {
-  border-color: transparent;
+  border-color: var(--feature-border);
   background: var(--feature);
-  color: var(--on-feature);
-  --link: var(--link-on-feature);
-  --muted: var(--feature-muted);
-  --text-soft: var(--feature-muted);
-  --hairline: rgba(255, 255, 255, 0.16);
 }
 
 .wm-steps.filtering .wm-step:not(.lit) {
@@ -294,6 +283,9 @@
 }
 
 .wm-step-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin: 0;
   color: var(--muted);
   font-size: 14px;
@@ -302,9 +294,15 @@
   font-variant-numeric: tabular-nums;
 }
 
-.wm-step-eyebrow strong {
-  color: var(--on-feature);
+.wm-flag {
+  padding: 2px 10px;
+  border: 1px solid var(--text);
+  border-radius: var(--r-pill);
+  color: var(--text);
+  font-size: 12px;
   font-weight: 600;
+  line-height: 1.33;
+  letter-spacing: -0.12px;
 }
 
 .wm-step h3 {
@@ -524,12 +522,6 @@
     margin-top: 48px;
   }
 
-  .wm-stats {
-    position: static;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin-top: 16px;
-    transform: none;
-  }
 }
 
 @media (max-width: 734px) {
@@ -556,6 +548,10 @@
 
   .wm-ctas {
     flex-wrap: wrap;
+  }
+
+  .wm-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .wm-stats dd {
