@@ -48,6 +48,7 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
   const expert = expertName(map)
   const judgmentCalls = map.steps.filter((s) => s.is_judgment_call).length
   const selectedGuardrail = map.guardrails.find((g) => g.id === selected) ?? null
+  const heroStep = map.steps.find((s) => s.is_judgment_call) ?? map.steps[0]
 
   useEffect(() => {
     if (!selectedGuardrail) return
@@ -66,7 +67,7 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
 
   return (
     <div className="wm">
-      <nav className="wm-subnav" aria-label="Work Map">
+      <nav className="wm-subnav glass" aria-label="Work Map">
         <span className="wm-subnav-title">Work Map</span>
         <div className="wm-subnav-links">
           <a href="#wm-guardrails">Guardrails</a>
@@ -77,29 +78,15 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
         </div>
       </nav>
 
-      <header className="wm-band dark wm-hero">
+      <header className="wm-band wm-hero">
         <div className="wm-container">
           <p className="wm-eyebrow">Learned from {expert}</p>
           <h1>{map.title}</h1>
-          <p className="wm-lead">
+          <p className="wm-tagline">
             {map.confirmed_at
               ? `Confirmed by ${expert} on ${formatConfirmed(map.confirmed_at)}.`
               : `Draft. ${expert} has not confirmed the teach-back yet.`}
           </p>
-          <dl className="wm-counts">
-            <div>
-              <dt>steps</dt>
-              <dd>{map.steps.length}</dd>
-            </div>
-            <div>
-              <dt>judgment calls</dt>
-              <dd>{judgmentCalls}</dd>
-            </div>
-            <div>
-              <dt>guardrails</dt>
-              <dd>{map.guardrails.length}</dd>
-            </div>
-          </dl>
           <div className="wm-ctas">
             <Link className="button" to={`/teach/${map.id}`}>
               Teach a new hire
@@ -108,11 +95,41 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
               Read the steps
             </a>
           </div>
+
+          {heroStep && (
+            <figure className="wm-shot">
+              <button
+                type="button"
+                className="wm-shot-frame"
+                onClick={() => show(heroStep.frame_ts, `Step ${heroStep.index} · ${heroStep.title}`)}
+                aria-label={`Enlarge screen moment at ${formatTs(heroStep.frame_ts)}`}
+              >
+                <img src={frameUrl(sessionId, heroStep.frame_ts)} alt={`${expert}'s screen during "${heroStep.title}"`} />
+              </button>
+              <dl className="wm-stats glass">
+                <div>
+                  <dt>steps</dt>
+                  <dd>{map.steps.length}</dd>
+                </div>
+                <div>
+                  <dt>judgment calls</dt>
+                  <dd>{judgmentCalls}</dd>
+                </div>
+                <div>
+                  <dt>guardrails</dt>
+                  <dd>{map.guardrails.length}</dd>
+                </div>
+              </dl>
+              <figcaption>
+                Step {heroStep.index} at {formatTs(heroStep.frame_ts)}: {heroStep.title.toLowerCase()}.
+              </figcaption>
+            </figure>
+          )}
         </div>
       </header>
 
       {map.guardrails.length > 0 && (
-        <section id="wm-guardrails" className="wm-band light" aria-labelledby="wm-guardrails-title">
+        <section id="wm-guardrails" className="wm-band alt" aria-labelledby="wm-guardrails-title">
           <div className="wm-container">
             <h2 id="wm-guardrails-title">Guardrails</h2>
             <p className="wm-intro">
@@ -131,9 +148,11 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
                   <p className="wm-attrib">
                     {g.reason.speaker}, {sourceLabel[g.reason.source]}
                   </p>
-                  <button type="button" className="link more wm-moment" onClick={() => show(g.frame_ts, g.statement)}>
-                    Screen moment {formatTs(g.frame_ts)}
-                  </button>
+                  <div className="wm-moment-row">
+                    <button type="button" className="link more" onClick={() => show(g.frame_ts, g.statement)}>
+                      Screen moment {formatTs(g.frame_ts)}
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
@@ -141,10 +160,10 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
         </section>
       )}
 
-      <section id="wm-steps" className="wm-band parchment" aria-labelledby="wm-steps-title">
+      <section id="wm-steps" className="wm-band" aria-labelledby="wm-steps-title">
         <div className="wm-container">
           <h2 id="wm-steps-title">Steps</h2>
-          <p className="wm-intro">What {expert} did, in order, and why. Judgment calls are on dark tiles.</p>
+          <p className="wm-intro">What {expert} did, in order, and why. Judgment calls stand out in the inverse tone.</p>
           <ol className={`wm-steps ${selected ? 'filtering' : ''}`}>
             {map.steps.map((step) => {
               const rails = map.guardrails.filter((g) => step.guardrail_ids.includes(g.id))
@@ -211,7 +230,7 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
       </section>
 
       {map.open_questions.length > 0 && (
-        <section className="wm-band light" aria-labelledby="wm-open-title">
+        <section className="wm-band alt" aria-labelledby="wm-open-title">
           <div className="wm-container">
             <h2 id="wm-open-title">Still unclear</h2>
             <ul className="wm-open">

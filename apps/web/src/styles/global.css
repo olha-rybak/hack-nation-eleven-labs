@@ -1,46 +1,52 @@
-/* Design tokens from apple-DESIGN.md (repo root of the hackathon folder).
-   One accent: Action Blue, on interactive elements only. Emphasis comes from
-   switching surface (light tile -> dark tile), never from a second colour.
-   The only shadow in the system sits under screen frames, our "product". */
+/* Design system for the apprentice side, after apple-DESIGN.md plus Liquid Glass.
+   - One accent: Action Blue, on interactive elements only.
+   - Emphasis by surface change (feature tile), never by a second colour.
+   - Glass only on floating controls that sit over real content.
+   - Spacing on one scale: 4 8 12 16 20 24 32 48 64 80.
+   Theme: tokens below are the light theme. The dark theme applies when the
+   user picks it (data-theme="dark") or, with no pick, when the system is dark. */
 
 :root {
+  --page: #f5f5f7;
+  --band: #ffffff;
+  --band-alt: #f5f5f7;
+  --card: #ffffff;
+  --card-border: #e0e0e0;
+  --feature: #1d1d1f;
+  --on-feature: #ffffff;
+  --feature-muted: #a1a1a6;
+  --text: #1d1d1f;
+  --text-soft: #333336;
+  --muted: #6e6e73;
+  --hairline: #e0e0e0;
+  --link: #0066cc;
+  --link-on-feature: #2997ff;
   --primary: #0066cc;
   --primary-focus: #0071e3;
-  --primary-on-dark: #2997ff;
-  --ink: #1d1d1f;
-  --ink-muted-80: #333333;
-  --ink-muted-48: #7a7a7a;
-  --body-muted: #cccccc;
-  --hairline: #e0e0e0;
-  --divider-soft: #f0f0f0;
-  --canvas: #ffffff;
-  --parchment: #f5f5f7;
-  --pearl: #fafafc;
-  --tile-1: #272729;
-  --tile-2: #2a2a2c;
-  --black: #000000;
-  --chip: rgba(210, 210, 215, 0.64);
-  --product-shadow: rgba(0, 0, 0, 0.22) 3px 5px 30px 0;
+  --panel: #ffffff;
+  --bubble: #e9e9eb;
+  --bubble-text: #1d1d1f;
+  --bubble-own: #1d1d1f;
+  --bubble-own-text: #ffffff;
 
-  /* Theme roles */
-  --page: var(--parchment);
-  --surface: var(--canvas);
-  --text: var(--ink);
-  --muted: var(--ink-muted-48);
-  --link: var(--primary);
-  --line: var(--hairline);
+  --glass: rgba(255, 255, 255, 0.58);
+  --glass-strong: rgba(250, 250, 252, 0.78);
+  --glass-rim: rgba(255, 255, 255, 0.85);
+  --glass-edge: rgba(0, 0, 0, 0.06);
+  --glass-depth: 0 10px 30px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --product-shadow: 3px 5px 30px rgba(0, 0, 0, 0.22);
 
   --font-display: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
   --font-text: 'SF Pro Text', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
   --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
   --r-sm: 8px;
-  --r-md: 11px;
   --r-lg: 18px;
+  --r-xl: 28px;
   --r-pill: 9999px;
-  --panel-width: 360px;
+  --panel-width: 340px;
 
-  color-scheme: light dark;
+  color-scheme: light;
   font: 400 17px/1.47 var(--font-text);
   letter-spacing: -0.374px;
   color: var(--text);
@@ -48,15 +54,65 @@
   -webkit-font-smoothing: antialiased;
 }
 
+:root[data-theme='dark'] {
+  --page: #000000;
+  --band: #000000;
+  --band-alt: #0d0d0e;
+  --card: #1c1c1e;
+  --card-border: rgba(255, 255, 255, 0.1);
+  --feature: #2c2c2e;
+  --on-feature: #ffffff;
+  --feature-muted: #a1a1a6;
+  --text: #f5f5f7;
+  --text-soft: #d1d1d6;
+  --muted: #98989d;
+  --hairline: rgba(255, 255, 255, 0.14);
+  --link: #2997ff;
+  --link-on-feature: #2997ff;
+  --panel: #111112;
+  --bubble: #2c2c2e;
+  --bubble-text: #f5f5f7;
+  --bubble-own: #f5f5f7;
+  --bubble-own-text: #1d1d1f;
+
+  --glass: rgba(44, 44, 46, 0.5);
+  --glass-strong: rgba(22, 22, 23, 0.72);
+  --glass-rim: rgba(255, 255, 255, 0.2);
+  --glass-edge: rgba(255, 255, 255, 0.08);
+  --glass-depth: 0 10px 30px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.4);
+
+  color-scheme: dark;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
-    --page: var(--black);
-    --surface: var(--tile-1);
-    --text: #ffffff;
-    --muted: var(--body-muted);
-    --link: var(--primary-on-dark);
-    --line: rgba(255, 255, 255, 0.12);
-    --chip: rgba(66, 66, 69, 0.72);
+  :root:not([data-theme='light']) {
+    --page: #000000;
+    --band: #000000;
+    --band-alt: #0d0d0e;
+    --card: #1c1c1e;
+    --card-border: rgba(255, 255, 255, 0.1);
+    --feature: #2c2c2e;
+    --on-feature: #ffffff;
+    --feature-muted: #a1a1a6;
+    --text: #f5f5f7;
+    --text-soft: #d1d1d6;
+    --muted: #98989d;
+    --hairline: rgba(255, 255, 255, 0.14);
+    --link: #2997ff;
+    --link-on-feature: #2997ff;
+    --panel: #111112;
+    --bubble: #2c2c2e;
+    --bubble-text: #f5f5f7;
+    --bubble-own: #f5f5f7;
+    --bubble-own-text: #1d1d1f;
+
+    --glass: rgba(44, 44, 46, 0.5);
+    --glass-strong: rgba(22, 22, 23, 0.72);
+    --glass-rim: rgba(255, 255, 255, 0.2);
+    --glass-edge: rgba(255, 255, 255, 0.08);
+    --glass-depth: 0 10px 30px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.4);
+
+    color-scheme: dark;
   }
 }
 
@@ -89,6 +145,28 @@ code {
   font-size: 0.88em;
 }
 
+/* Liquid Glass: translucent, blurred, with a bright rim on top and soft depth.
+   Used only on controls that float over content. */
+
+.glass {
+  background: var(--glass) linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 55%);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid var(--glass-edge);
+  box-shadow:
+    inset 0 1px 0 var(--glass-rim),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    var(--glass-depth);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: var(--card);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
 /* Buttons */
 
 .button {
@@ -105,7 +183,7 @@ code {
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
-  transition: transform 120ms ease-out;
+  transition: transform 140ms ease-out;
 }
 
 .button:active {
@@ -114,7 +192,7 @@ code {
 
 .button:disabled {
   background: var(--hairline);
-  color: var(--ink-muted-48);
+  color: var(--muted);
   cursor: default;
   transform: none;
 }
@@ -126,7 +204,7 @@ code {
 }
 
 .button.compact {
-  padding: 6px 15px;
+  padding: 5px 14px;
   font-size: 14px;
   letter-spacing: -0.224px;
 }
@@ -136,12 +214,11 @@ code {
   place-items: center;
   width: 44px;
   height: 44px;
-  border: 0;
+  padding: 0;
   border-radius: 50%;
-  background: var(--chip);
   color: var(--text);
   cursor: pointer;
-  transition: transform 120ms ease-out;
+  transition: transform 140ms ease-out;
 }
 
 .icon-button:active {
@@ -149,8 +226,8 @@ code {
 }
 
 .icon-button svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 
 .link {
@@ -170,7 +247,7 @@ code {
   content: '\00a0\203A';
 }
 
-/* Global nav: thin, true black, 12px links */
+/* Global nav: a thin glass bar */
 
 .shell {
   display: grid;
@@ -179,37 +256,28 @@ code {
 }
 
 .globalnav {
+  position: relative;
+  z-index: 10;
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 28px;
   height: 44px;
-  padding: 0 22px;
-  background: var(--black);
-  color: #fff;
+  padding: 0 12px 0 22px;
+  background: var(--glass-strong);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--glass-edge);
   font-size: 12px;
   letter-spacing: -0.12px;
   line-height: 1;
 }
 
-.globalnav .brand {
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.224px;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.globalnav nav {
-  display: flex;
-  gap: 32px;
-}
-
 .globalnav a {
-  color: #fff;
+  color: var(--text);
   text-decoration: none;
-  opacity: 0.8;
   white-space: nowrap;
+  opacity: 0.72;
+  transition: opacity 150ms ease;
 }
 
 .globalnav a:hover,
@@ -217,8 +285,44 @@ code {
   opacity: 1;
 }
 
-.globalnav .globalnav-erp {
+.globalnav .brand {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.224px;
+  opacity: 1;
+}
+
+.globalnav nav {
+  display: flex;
+  gap: 28px;
+}
+
+.globalnav .globalnav-end {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   margin-left: auto;
+}
+
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 140ms ease-out;
+}
+
+.theme-toggle:active {
+  transform: scale(0.92);
+}
+
+.theme-toggle svg {
+  width: 15px;
+  height: 15px;
 }
 
 /* Session layout: main stage + right side panel */
@@ -242,42 +346,43 @@ code {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: var(--surface);
-  border-left: 1px solid var(--line);
+  background: var(--panel);
+  border-left: 1px solid var(--hairline);
 }
 
 .side-panel h2 {
   margin: 0;
-  padding: 24px 24px 12px;
-  font: 600 21px/1.19 var(--font-display);
-  letter-spacing: 0.231px;
+  padding: 20px 20px 12px;
+  font: 600 17px/1.24 var(--font-text);
+  letter-spacing: -0.374px;
 }
 
 .side-panel .empty {
-  padding: 0 24px;
+  padding: 0 20px;
   color: var(--muted);
   font-size: 14px;
   line-height: 1.43;
   letter-spacing: -0.224px;
 }
 
-/* Conversation. The apprentice's turns sit on a dark tile, the expert's on parchment. */
+/* Conversation: the expert on the left, the apprentice on the right in the inverse tone */
 
 .transcript {
   flex: 1;
   overflow-y: auto;
   margin: 0;
-  padding: 4px 16px 24px;
+  padding: 0 16px 24px;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .line {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  gap: 4px;
   animation: line-in 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
@@ -288,11 +393,15 @@ code {
 .line-meta {
   display: flex;
   gap: 6px;
-  padding: 0 14px 4px;
+  padding: 0 12px;
   color: var(--muted);
-  font-size: 12px;
-  letter-spacing: -0.12px;
-  line-height: 1;
+  font-size: 11px;
+  letter-spacing: -0.08px;
+  line-height: 1.3;
+}
+
+.line-meta span {
+  font-weight: 600;
 }
 
 .line-meta time {
@@ -300,31 +409,20 @@ code {
 }
 
 .line p {
-  max-width: 88%;
+  max-width: 86%;
   margin: 0;
-  padding: 9px 14px;
+  padding: 8px 12px;
   border-radius: var(--r-lg);
-  background: var(--parchment);
-  color: var(--ink);
-  font-size: 17px;
-  line-height: 1.47;
-  letter-spacing: -0.374px;
+  background: var(--bubble);
+  color: var(--bubble-text);
+  font-size: 15px;
+  line-height: 1.4;
+  letter-spacing: -0.24px;
 }
 
 .line.agent p {
-  background: var(--tile-1);
-  color: #fff;
-}
-
-@media (prefers-color-scheme: dark) {
-  .line p {
-    background: var(--tile-2);
-    color: #fff;
-  }
-
-  .line.agent p {
-    background: #3a3a3c;
-  }
+  background: var(--bubble-own);
+  color: var(--bubble-own-text);
 }
 
 @keyframes line-in {
@@ -337,23 +435,28 @@ code {
 /* Placeholders until each module's ticket lands */
 
 .placeholder {
-  max-width: 980px;
+  max-width: 760px;
 }
 
 .placeholder h1 {
-  margin: 0 0 12px;
+  margin: 0;
   font: 600 56px/1.07 var(--font-display);
   letter-spacing: -0.28px;
 }
 
 .placeholder p {
-  margin: 0 0 32px;
+  margin: 12px 0 0;
   color: var(--muted);
-  font: 400 28px/1.14 var(--font-display);
-  letter-spacing: 0.196px;
+  font: 400 21px/1.38 var(--font-display);
+  letter-spacing: 0.231px;
+}
+
+.placeholder .button {
+  margin-top: 32px;
 }
 
 .placeholder .todo {
+  margin-top: 12px;
   font: 400 14px/1.43 var(--font-text);
   letter-spacing: -0.224px;
 }
@@ -374,7 +477,7 @@ code {
 
   .side-panel {
     border-left: 0;
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--hairline);
   }
 
   .stage {
@@ -383,11 +486,11 @@ code {
 
   .globalnav,
   .globalnav nav {
-    gap: 20px;
+    gap: 18px;
   }
 
   .globalnav {
-    padding: 0 16px;
+    padding: 0 10px 0 16px;
   }
 
   .globalnav .globalnav-erp {
@@ -399,8 +502,7 @@ code {
   }
 
   .placeholder p {
-    font-size: 21px;
-    line-height: 1.19;
+    font-size: 19px;
   }
 }
 
@@ -410,7 +512,8 @@ code {
   }
 
   .button,
-  .icon-button {
+  .icon-button,
+  .theme-toggle {
     transition: none;
   }
 }

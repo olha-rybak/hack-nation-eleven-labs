@@ -1,4 +1,5 @@
 import { Link, NavLink, Outlet } from 'react-router'
+import { ThemeToggle } from './ThemeToggle'
 
 const DEMO_ID = 'demo'
 
@@ -14,9 +15,12 @@ export function Shell() {
           <NavLink to={`/map/${DEMO_ID}`}>Work Map</NavLink>
           <NavLink to={`/teach/${DEMO_ID}`}>Teach</NavLink>
         </nav>
-        <a className="globalnav-erp" href="/erp" target="_blank" rel="noreferrer">
-          Open ERP
-        </a>
+        <div className="globalnav-end">
+          <a className="globalnav-erp" href="/erp" target="_blank" rel="noreferrer">
+            Open ERP
+          </a>
+          <ThemeToggle />
+        </div>
       </header>
       <Outlet />
     </div>

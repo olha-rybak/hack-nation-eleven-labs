@@ -1,6 +1,8 @@
-/* Work Map, following apple-DESIGN.md: full-bleed bands whose colour change is the
-   divider, utility cards with a hairline, judgment calls emphasised by switching to
-   a dark tile, Action Blue only on interactive elements. */
+/* Work Map. Bands alternate band / band-alt and the colour change is the divider.
+   Judgment calls switch to the feature tile. Glass appears only where it floats
+   over content: the sub-nav and the stats over the screen moment.
+   Vertical rhythm: 8 between a label and its text, 12 between related lines,
+   32 between groups, 80 between bands. */
 
 .wm {
   min-height: 100%;
@@ -20,25 +22,24 @@
   padding: 0 48px;
 }
 
-/* Sub-nav: frosted parchment, 52px, title left, links and the primary CTA right */
+/* Floating glass sub-nav. It overlaps the hero, so content scrolls under it. */
 
 .wm-subnav {
   position: sticky;
-  top: 0;
-  z-index: 3;
+  top: 12px;
+  z-index: 5;
   display: flex;
   align-items: center;
+  max-width: 884px;
   height: 52px;
-  padding: 0 48px;
-  background: rgba(245, 245, 247, 0.8);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  margin: 12px auto -64px;
+  padding: 0 8px 0 24px;
+  border-radius: var(--r-pill);
 }
 
 .wm-subnav-title {
-  font: 600 21px/1.19 var(--font-display);
-  letter-spacing: 0.231px;
+  font: 600 19px/1.2 var(--font-display);
+  letter-spacing: 0.12px;
 }
 
 .wm-subnav-links {
@@ -51,32 +52,24 @@
 }
 
 .wm-subnav-links a:not(.button) {
-  color: var(--ink);
+  color: var(--text);
   text-decoration: none;
+  opacity: 0.8;
 }
 
 .wm-subnav-links a:not(.button):hover {
-  color: var(--primary);
+  opacity: 1;
 }
 
 /* Bands */
 
 .wm-band {
   padding: 80px 0;
+  background: var(--band);
 }
 
-.wm-band.light {
-  background: var(--canvas);
-}
-
-.wm-band.parchment {
-  background: var(--parchment);
-}
-
-.wm-band.dark {
-  background: var(--tile-1);
-  color: #fff;
-  --link: var(--primary-on-dark);
+.wm-band.alt {
+  background: var(--band-alt);
 }
 
 .wm-band h2 {
@@ -87,77 +80,123 @@
 }
 
 .wm-intro {
-  margin: 12px 0 40px;
-  color: var(--ink-muted-48);
+  margin: 12px 0 32px;
+  color: var(--muted);
 }
 
-/* Hero: centred stack, headline -> lead -> numbers -> two pills */
+/* Hero: eyebrow, headline, one line of detail, two pills, then the screen moment */
 
 .wm-hero {
+  padding-top: 128px;
   text-align: center;
 }
 
 .wm-eyebrow {
-  margin: 0 0 8px;
-  color: var(--body-muted);
-  font: 600 21px/1.19 var(--font-display);
-  letter-spacing: 0.231px;
+  margin: 0;
+  color: var(--muted);
+  font: 600 17px/1.24 var(--font-text);
+  letter-spacing: -0.374px;
 }
 
 .wm-hero h1 {
-  margin: 0;
+  margin: 8px 0 0;
   font-size: 56px;
   line-height: 1.07;
   letter-spacing: -0.28px;
 }
 
-.wm-lead {
+.wm-tagline {
   margin: 12px 0 0;
-  color: var(--body-muted);
-  font: 400 28px/1.14 var(--font-display);
-  letter-spacing: 0.196px;
-}
-
-.wm-counts {
-  display: flex;
-  justify-content: center;
-  gap: 64px;
-  margin: 48px 0 0;
-}
-
-.wm-counts > div {
-  display: flex;
-  flex-direction: column-reverse;
-}
-
-.wm-counts dd {
-  margin: 0;
-  font: 600 56px/1.07 var(--font-display);
-  letter-spacing: -0.28px;
-  font-variant-numeric: tabular-nums;
-}
-
-.wm-counts dt {
-  margin-top: 4px;
-  color: var(--body-muted);
-  font-size: 17px;
+  color: var(--muted);
+  font: 400 21px/1.38 var(--font-display);
+  letter-spacing: 0.231px;
 }
 
 .wm-ctas {
   display: flex;
   justify-content: center;
   gap: 16px;
-  margin-top: 48px;
+  margin-top: 32px;
 }
 
-/* Cards: white, 1px hairline, 18px radius, 24px padding, no shadow */
+.wm-shot {
+  position: relative;
+  margin: 104px auto 0;
+  max-width: 880px;
+}
+
+.wm-shot-frame {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--band-alt);
+  box-shadow: var(--product-shadow);
+  cursor: zoom-in;
+}
+
+.wm-shot-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.wm-stats {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 148px);
+  margin: 0;
+  padding: 16px 8px;
+  border-radius: var(--r-xl);
+  transform: translate(-50%, -50%);
+}
+
+.wm-stats > div {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 4px;
+}
+
+.wm-stats > div + div {
+  border-left: 1px solid var(--hairline);
+}
+
+.wm-stats dd {
+  margin: 0;
+  font: 600 40px/1 var(--font-display);
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.wm-stats dt {
+  color: var(--text-soft);
+  font-size: 14px;
+  line-height: 1.29;
+  letter-spacing: -0.224px;
+}
+
+.wm-shot figcaption {
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.43;
+  letter-spacing: -0.224px;
+}
+
+/* Cards: hairline, 18px radius, no shadow */
 
 .wm-card {
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--card-border);
   border-radius: var(--r-lg);
-  background: var(--canvas);
-  color: var(--ink);
-  transition: opacity 220ms ease;
+  background: var(--card);
+  color: var(--text);
+  transition: opacity 220ms ease, box-shadow 200ms ease;
 }
 
 .wm-card[aria-current='true'],
@@ -167,18 +206,19 @@
 }
 
 .wm-kind {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 1.29;
-  letter-spacing: -0.224px;
+  line-height: 1.33;
+  letter-spacing: -0.12px;
+  color: var(--muted);
 }
 
 /* Guardrails */
 
 .wm-guardrail-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
 }
 
 .wm-guardrail {
@@ -191,7 +231,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: 8px;
   padding: 0;
   border: 0;
   background: none;
@@ -200,26 +240,27 @@
 }
 
 .wm-guardrail-statement {
-  font: 600 21px/1.19 var(--font-display);
+  font: 600 21px/1.24 var(--font-display);
   letter-spacing: 0.231px;
 }
 
 .wm-guardrail-quote {
-  margin: 14px 0 0;
-  color: var(--ink-muted-80);
+  margin: 12px 0 0;
+  color: var(--text-soft);
 }
 
 .wm-attrib {
   margin: 4px 0 20px;
-  color: var(--ink-muted-48);
+  color: var(--muted);
   font-size: 14px;
   line-height: 1.43;
   letter-spacing: -0.224px;
 }
 
-.wm-moment {
-  align-self: flex-start;
+.wm-moment-row {
   margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--hairline);
 }
 
 /* Steps */
@@ -230,7 +271,7 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .wm-step {
@@ -240,9 +281,12 @@
 
 .wm-step.judgment {
   border-color: transparent;
-  background: var(--tile-1);
-  color: #fff;
-  --link: var(--primary-on-dark);
+  background: var(--feature);
+  color: var(--on-feature);
+  --link: var(--link-on-feature);
+  --muted: var(--feature-muted);
+  --text-soft: var(--feature-muted);
+  --hairline: rgba(255, 255, 255, 0.16);
 }
 
 .wm-steps.filtering .wm-step:not(.lit) {
@@ -251,24 +295,20 @@
 
 .wm-step-eyebrow {
   margin: 0;
-  color: var(--ink-muted-48);
+  color: var(--muted);
   font-size: 14px;
   line-height: 1.43;
   letter-spacing: -0.224px;
   font-variant-numeric: tabular-nums;
 }
 
-.wm-step.judgment .wm-step-eyebrow {
-  color: var(--body-muted);
-}
-
 .wm-step-eyebrow strong {
-  color: #fff;
+  color: var(--on-feature);
   font-weight: 600;
 }
 
 .wm-step h3 {
-  margin: 4px 0 28px;
+  margin: 4px 0 24px;
   font-size: 28px;
   line-height: 1.14;
   letter-spacing: 0.196px;
@@ -281,8 +321,6 @@
   align-items: start;
 }
 
-/* The screen frame is our product image: 8px inline radius and the system's one shadow */
-
 .wm-thumb {
   display: block;
   width: 100%;
@@ -290,11 +328,11 @@
   border: 0;
   border-radius: var(--r-sm);
   overflow: hidden;
-  background: var(--parchment);
+  background: var(--band-alt);
   aspect-ratio: 16 / 10;
   box-shadow: var(--product-shadow);
   cursor: zoom-in;
-  transition: transform 120ms ease-out;
+  transition: transform 140ms ease-out;
 }
 
 .wm-thumb:active {
@@ -312,27 +350,23 @@
 .wm-step-text {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
   min-width: 0;
 }
 
 .wm-label {
   margin: 0;
-  color: var(--ink-muted-48);
-  font-size: 14px;
-  line-height: 1.43;
-  letter-spacing: -0.224px;
-}
-
-.wm-step.judgment .wm-label,
-.wm-step.judgment .wm-quote footer {
-  color: var(--body-muted);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.33;
+  letter-spacing: -0.12px;
 }
 
 .wm-decision {
-  margin: 0;
+  margin: 4px 0 0;
   font-weight: 600;
-  line-height: 1.24;
+  line-height: 1.35;
 }
 
 .wm-quote {
@@ -341,13 +375,13 @@
 
 .wm-quote p {
   margin: 0;
-  font: 300 24px/1.5 var(--font-text);
-  letter-spacing: 0;
+  font: 300 21px/1.43 var(--font-display);
+  letter-spacing: 0.231px;
 }
 
 .wm-quote footer {
-  margin-top: 4px;
-  color: var(--ink-muted-48);
+  margin-top: 8px;
+  color: var(--muted);
   font-size: 14px;
   line-height: 1.43;
   letter-spacing: -0.224px;
@@ -363,13 +397,9 @@
   border-top: 1px solid var(--hairline);
 }
 
-.wm-step.judgment .wm-step-guardrails {
-  border-top-color: rgba(255, 255, 255, 0.16);
-}
-
 .wm-step-guardrails button {
   display: grid;
-  grid-template-columns: 104px minmax(0, 1fr);
+  grid-template-columns: 96px minmax(0, 1fr);
   gap: 12px;
   align-items: baseline;
   padding: 0;
@@ -391,9 +421,9 @@
 }
 
 .wm-open {
-  margin: 24px 0 0;
+  margin: 0;
   padding-left: 20px;
-  color: var(--ink-muted-80);
+  color: var(--text-soft);
 }
 
 /* Frame viewer */
@@ -405,8 +435,8 @@
   border: 0;
   border-radius: var(--r-lg);
   overflow: hidden;
-  background: var(--canvas);
-  color: var(--ink);
+  background: var(--card);
+  color: var(--text);
 }
 
 .wm-viewer[open] {
@@ -414,31 +444,34 @@
 }
 
 .wm-viewer::backdrop {
-  background: rgba(0, 0, 0, 0.48);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
 }
 
 .wm-viewer figure {
+  position: relative;
   margin: 0;
 }
 
 .wm-viewer img {
   display: block;
   width: 100%;
-  max-height: calc(100vh - 130px);
+  max-height: calc(100vh - 110px);
   object-fit: contain;
-  background: var(--parchment);
+  background: var(--band-alt);
 }
 
 .wm-viewer figcaption {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 12px 12px 12px 24px;
+  gap: 12px;
+  padding: 16px 24px;
+  font-size: 15px;
+  letter-spacing: -0.24px;
 }
 
 .wm-viewer figcaption time {
-  color: var(--ink-muted-48);
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -448,63 +481,15 @@
 }
 
 .wm-viewer .icon-button {
-  background: rgba(210, 210, 215, 0.64);
-  color: var(--ink);
+  position: absolute;
+  top: 16px;
+  right: 16px;
 }
 
 @keyframes wm-viewer-in {
   from {
     opacity: 0;
     transform: scale(0.97);
-  }
-}
-
-/* Dark theme: light bands become black and near-black tiles */
-
-@media (prefers-color-scheme: dark) {
-  .wm-subnav {
-    background: rgba(22, 22, 23, 0.8);
-    border-bottom-color: rgba(255, 255, 255, 0.12);
-  }
-
-  .wm-subnav-links a:not(.button) {
-    color: #fff;
-  }
-
-  .wm-band.light,
-  .wm-band.parchment {
-    background: var(--black);
-  }
-
-  .wm-band.dark {
-    background: var(--tile-1);
-  }
-
-  .wm-card {
-    border-color: rgba(255, 255, 255, 0.12);
-    background: var(--tile-2);
-    color: #fff;
-  }
-
-  .wm-step.judgment {
-    background: #3a3a3c;
-  }
-
-  .wm-intro,
-  .wm-attrib,
-  .wm-label,
-  .wm-step-eyebrow,
-  .wm-quote footer {
-    color: var(--body-muted);
-  }
-
-  .wm-guardrail-quote,
-  .wm-open {
-    color: #fff;
-  }
-
-  .wm-step-guardrails {
-    border-top-color: rgba(255, 255, 255, 0.16);
   }
 }
 
@@ -518,15 +503,32 @@
   .wm-step-body {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .wm-guardrail-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 833px) {
   .wm-subnav {
-    padding: 0 20px;
+    margin-left: 12px;
+    margin-right: 12px;
+    padding-left: 20px;
   }
 
   .wm-subnav-links a:not(.button) {
     display: none;
+  }
+
+  .wm-shot {
+    margin-top: 48px;
+  }
+
+  .wm-stats {
+    position: static;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 16px;
+    transform: none;
   }
 }
 
@@ -535,38 +537,29 @@
     padding: 48px 0;
   }
 
+  .wm-hero {
+    padding-top: 96px;
+  }
+
   .wm-container {
     padding: 0 20px;
   }
 
-  .wm-band h2 {
-    font-size: 34px;
-  }
-
+  .wm-band h2,
   .wm-hero h1 {
     font-size: 34px;
   }
 
-  .wm-lead {
-    font-size: 21px;
-    line-height: 1.19;
-  }
-
-  .wm-counts {
-    gap: 32px;
-  }
-
-  .wm-counts dd {
-    font-size: 40px;
+  .wm-tagline {
+    font-size: 19px;
   }
 
   .wm-ctas {
-    flex-direction: column;
-    align-items: center;
+    flex-wrap: wrap;
   }
 
-  .wm-guardrail-list {
-    grid-template-columns: minmax(0, 1fr);
+  .wm-stats dd {
+    font-size: 32px;
   }
 
   .wm-step {
@@ -580,12 +573,6 @@
   .wm-step-guardrails button {
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
-  }
-}
-
-@media (max-width: 419px) {
-  .wm-hero h1 {
-    font-size: 28px;
   }
 }
 
