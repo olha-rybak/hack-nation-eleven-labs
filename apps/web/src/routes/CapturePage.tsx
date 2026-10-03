@@ -1,11 +1,20 @@
 import { useNavigate } from 'react-router'
 import { CaptureView } from '../capture/CaptureView'
+import { useInterviewer, type InterviewerStatus } from '../capture/useInterviewer'
 import { useScreenCapture } from '../capture/useScreenCapture'
 import { SessionLayout } from '../components/SessionLayout'
 import { CapturePanel } from '../session/CapturePanel'
 import { useSessionFeed } from '../session/useSessionFeed'
 
 const WINDOW_SEC = Number(import.meta.env.VITE_OFF_THE_RECORD_WINDOW_SEC) || 30
+
+const voiceText: Record<InterviewerStatus, string> = {
+  off: 'Voice off',
+  connecting: 'Voice connecting…',
+  listening: 'Apprentice listening',
+  speaking: 'Apprentice speaking',
+  error: 'Voice failed',
+}
 
 export function CapturePage() {
   const capture = useScreenCapture()
@@ -20,6 +29,7 @@ export function CapturePage() {
         ? state.sessionId
         : null
   const feed = useSessionFeed(sessionId)
+  const voice = useInterviewer(live ? state.capture.sessionId : null, live ? state.capture.startedAt : null)
 
   const panel = (
     <CapturePanel
@@ -46,6 +56,12 @@ export function CapturePage() {
   return (
     <SessionLayout sessionId={sessionId} panelTitle="Apprentice" panel={panel}>
       <CaptureView capture={capture} />
+      {live && (
+        <p className="cap-hint" role="status">
+          {voiceText[voice.status]}
+          {voice.error && ` (${voice.error})`}
+        </p>
+      )}
     </SessionLayout>
   )
 }
