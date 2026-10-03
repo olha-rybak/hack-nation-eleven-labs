@@ -10,6 +10,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
+from apprentice.knowledge.graph import KnowledgeGraph, nodes_for_event
 from apprentice.session.hub import Hub
 from apprentice.session.store import SessionStore
 from apprentice.settings import Settings
@@ -126,8 +127,12 @@ class PauseService:
         settings: Settings,
         pick: SubjectPicker = pick_latest_subject,
         clock: Callable[[], float] = time.monotonic,
+        knowledge: KnowledgeGraph | None = None,
     ):
         self.store, self.hub, self.pick, self.clock = store, hub, pick, clock
+        self.knowledge = knowledge
+        self.known_max_facts = settings.KNOWN_MAX_FACTS
+        self.known_max_chars = settings.KNOWN_MAX_CHARS
         self.cfg = PauseConfig.from_settings(settings)
         self.tick_sec = settings.PAUSE_TICK_SEC
         self.detectors: dict[str, PauseDetector] = {}
@@ -161,7 +166,8 @@ class PauseService:
     async def tick(self, session_id: str) -> Decision:
         det = self.detectors[session_id]
         now = self.clock()
-        subject = self.pick(self.store.events(session_id), det.asked_event_ids)
+        events = self.store.events(session_id)
+        subject = self.pick(events, det.asked_event_ids)
         d = det.check(now, subject)
         self._log_transition(session_id, det, now, d)
         if d.fire:
@@ -171,10 +177,19 @@ class PauseService:
                 "event_id": d.subject.event_id,
                 "question_index": det.asked,
                 "budget": self.cfg.max_questions,
+                "known": self._known(d.subject, events),
             }
             self.store.append_pause_log(session_id, {"t": self._t(det, now), "ask_now": msg})
             await self.hub.publish(session_id, "ask_now", msg)
         return d
+
+    def _known(self, subject: Subject, events: list[dict]) -> list[dict]:
+        """What the expert already told us about the subject, so the agent doesn't ask it again."""
+        if self.knowledge is None:
+            return []
+        event = next(e for e in events if e["id"] == subject.event_id)
+        nodes = nodes_for_event(event, events)
+        return self.knowledge.known(nodes, self.known_max_facts, self.known_max_chars)
 
     def _log_transition(self, sid: str, det: PauseDetector, now: float, d: Decision) -> None:
         """Log whenever the set of blockers changes. A single blocker is a near-miss."""
