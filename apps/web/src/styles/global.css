@@ -242,27 +242,6 @@ code {
   font-size: 13px;
 }
 
-/* Fake ERP: deliberately plain, it stands in for a third-party app */
-
-.erp {
-  min-height: 100%;
-  background: #eef0f2;
-  color: #222;
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 13px;
-}
-
-.erp-bar {
-  padding: 8px 16px;
-  background: #34495e;
-  color: #fff;
-  font-weight: bold;
-}
-
-.erp-body {
-  padding: 16px;
-}
-
 @media (max-width: 860px) {
   .session-layout {
     grid-template-columns: minmax(0, 1fr);
