@@ -29,11 +29,20 @@ class Settings(BaseSettings):
     EVENT_MIN_CONFIDENCE: float = 0.6
     VISION_MAX_TOKENS: int = 512
     VISION_THINKING: bool = False
+    VISION_PROVIDER: Literal["anthropic", "local"] = "anthropic"
+    VISION_MODEL: str = "claude-haiku-4-5"
+    VISION_EFFORT: Literal["low", "medium", "high", "xhigh", "max"] = "low"
     ANTHROPIC_API_KEY: str = ""
     MAP_LLM_PROVIDER: Literal["anthropic", "local"] = "anthropic"
     MAP_LLM_MODEL: str = "claude-opus-5-5"
     MAP_LLM_EFFORT: Literal["low", "medium", "high", "xhigh", "max"] = "high"
     MAP_LLM_TIMEOUT_SEC: float = 300
+    PRESIDIO_ENABLED: bool = True
+    PRESIDIO_SPACY_MODEL: str = "en_core_web_lg"
+    PRESIDIO_ENTITIES: str = "PERSON,EMAIL_ADDRESS,IBAN_CODE,PHONE_NUMBER,LOCATION"
+    PRESIDIO_SCORE_THRESHOLD: float = 0.4
+    PRESIDIO_PHONE_REGIONS: str = "AT,DE,CZ,GB,US"
+    TESSERACT_CMD: str = ""
 
 
 @lru_cache

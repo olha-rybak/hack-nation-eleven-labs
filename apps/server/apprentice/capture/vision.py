@@ -6,8 +6,9 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from apprentice import prompts
-from apprentice.capture.events import Event, parse_model_events, to_events
+from apprentice.capture.events import Event, RawEvent, parse_model_events, to_events
 from apprentice.llm.client import LlmClient, LlmError
+from apprentice.privacy.redactor import Redactor
 from apprentice.session.hub import Hub
 from apprentice.session.store import SessionStore
 from apprentice.settings import Settings
@@ -45,9 +46,11 @@ class VisionService:
         store: SessionStore,
         hub: Hub,
         settings: Settings,
+        redactor: Redactor,
         on_event: Callable[[str], None] | None = None,
     ):
         self.llm, self.store, self.hub, self.settings = llm, store, hub, settings
+        self.redactor = redactor
         self.on_event = on_event  # e.g. pause detector: an accepted event is screen activity
         self._sessions: dict[str, _SessionState] = {}
         self.brief: str | None = None  # environment brief from T-109, once it exists
@@ -92,9 +95,25 @@ class VisionService:
             temperature=0.1,
             extra={"chat_template_kwargs": {"enable_thinking": self.settings.VISION_THINKING}},
         )
-        raw = parse_model_events(reply)
+        raw = await asyncio.to_thread(self._redact, session_id, parse_model_events(reply))
         last = recent[-1] if recent else None
         return to_events(raw, last, cur.ts_ms, cur.ref, self.settings.EVENT_MIN_CONFIDENCE)
+
+    def _redact(self, session_id: str, raw: list[RawEvent]) -> list[RawEvent]:
+        red = self.redactor
+        out = []
+        for r in raw:
+            update = {"entity": red.text(session_id, r.entity)}
+            for name in ("before", "after"):
+                if isinstance(v := getattr(r, name), str):
+                    update[name] = red.text(session_id, v)
+            if r.fields:
+                update["fields"] = {
+                    k: red.text(session_id, v) if isinstance(v, str) else v
+                    for k, v in r.fields.items()
+                }
+            out.append(r.model_copy(update=update))
+        return out
 
     def _prompt(self, recent: list[Event]) -> str:
         parts = []

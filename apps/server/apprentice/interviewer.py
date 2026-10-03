@@ -5,6 +5,8 @@ from `/ingest/frame` land in the same session, so the page sees real screen even
 written events (fixtures, curl) can still be posted to `POST /events`.
 """
 
+import asyncio
+
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import ValidationError
 
@@ -29,7 +31,11 @@ async def add_events(
     request: Request,
     session: str = Query(LIVE_SESSION, pattern=SESSION_ID),
 ) -> dict:
-    store, hub = request.app.state.store, request.app.state.hub
+    store, hub, redactor = (
+        request.app.state.store,
+        request.app.state.hub,
+        request.app.state.redactor,
+    )
     if not store.exists(session):
         store.create(session)
     try:
@@ -37,8 +43,9 @@ async def add_events(
     except ValidationError as e:
         raise HTTPException(422, str(e)) from None
     for ev in events:
-        store.append_event(session, ev.model_dump())
-        await hub.publish(session, "event", ev.model_dump())
+        redacted = await asyncio.to_thread(redactor.event, session, ev.model_dump())
+        store.append_event(session, redacted)
+        await hub.publish(session, "event", redacted)
     request.app.state.pause.detector(session).on_screen_change(request.app.state.pause.clock())
     return {"events": len(store.events(session))}
 

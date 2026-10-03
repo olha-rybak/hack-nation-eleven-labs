@@ -2,9 +2,11 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from apprentice.privacy.redactor import Redactor
 from apprentice.session.hub import Hub
 from apprentice.session.routes import router
 from apprentice.session.store import SessionStore
+from apprentice.settings import Settings
 
 
 @pytest.fixture
@@ -13,6 +15,7 @@ def app(tmp_path):
     app.include_router(router)
     app.state.store = SessionStore(tmp_path)
     app.state.hub = Hub()
+    app.state.redactor = Redactor(app.state.store, Settings())
     return app
 
 

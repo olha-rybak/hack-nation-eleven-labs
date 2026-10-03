@@ -3,6 +3,7 @@
 Run (from apps/server):  uvicorn apprentice.main:app --port 8001  ->  http://localhost:8001/
 """
 
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -18,8 +19,10 @@ from apprentice.capture.vision import VisionService
 from apprentice.interviewer import router as interviewer_router
 from apprentice.knowledge.graph import KnowledgeGraph
 from apprentice.knowledge.routes import router as knowledge_router
+from apprentice.llm.claude_vision import ClaudeVisionClient
 from apprentice.llm.client import LlmClient
 from apprentice.llm.structured import structured_llm
+from apprentice.privacy.redactor import Redactor
 from apprentice.session.hub import Hub
 from apprentice.session.routes import router as session_router
 from apprentice.session.store import SessionStore
@@ -35,11 +38,13 @@ def repo_path(setting: str) -> Path:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    app.state.llm = LlmClient()
     s = settings.get_settings()
+    app.state.llm = ClaudeVisionClient(s) if s.VISION_PROVIDER == "anthropic" else LlmClient()
     app.state.store = SessionStore(repo_path(s.SESSIONS_DIR))
     app.state.knowledge = KnowledgeGraph(repo_path(s.KNOWLEDGE_PATH))
     app.state.hub = Hub()
+    redactor = app.state.redactor = Redactor(app.state.store, s)
+    await asyncio.to_thread(redactor.warm_up)
     pause = app.state.pause = PauseService(
         app.state.store, app.state.hub, s, knowledge=app.state.knowledge
     )
@@ -47,7 +52,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     def event_seen(session_id: str) -> None:  # an accepted event is screen activity
         pause.detector(session_id).on_screen_change(pause.clock())
 
-    app.state.vision = VisionService(app.state.llm, app.state.store, app.state.hub, s, event_seen)
+    app.state.vision = VisionService(
+        app.state.llm, app.state.store, app.state.hub, s, redactor, event_seen
+    )
     app.state.map_llm = structured_llm(s)
     yield
     await app.state.map_llm.aclose()
@@ -75,5 +82,9 @@ def get_llm(request: Request) -> LlmClient:
 
 
 @app.get("/health")
-async def health(llm: LlmClient = Depends(get_llm)) -> dict:
-    return {"server": "ok", "model": "ok" if await llm.ping() else "down"}
+async def health(request: Request, llm: LlmClient = Depends(get_llm)) -> dict:
+    return {
+        "server": "ok",
+        "model": "ok" if await llm.ping() else "down",
+        "presidio": request.app.state.redactor.status(),
+    }

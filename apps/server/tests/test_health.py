@@ -19,7 +19,7 @@ def test_health_ok():
     body = health_with(
         lambda r: httpx.Response(200, json={"choices": [{"message": {"content": "p"}}]})
     )
-    assert body == {"server": "ok", "model": "ok"}
+    assert body == {"server": "ok", "model": "ok", "presidio": "off"}
 
 
 def test_health_model_500():
@@ -30,4 +30,4 @@ def test_health_unreachable():
     def refuse(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("refused")
 
-    assert health_with(refuse) == {"server": "ok", "model": "down"}
+    assert health_with(refuse) == {"server": "ok", "model": "down", "presidio": "off"}

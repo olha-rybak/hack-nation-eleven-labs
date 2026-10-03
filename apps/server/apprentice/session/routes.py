@@ -1,9 +1,12 @@
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, ValidationError
 
 from apprentice import settings
 from apprentice.capture.events import Event
+from apprentice.privacy.redactor import Redactor
 from apprentice.session.hub import Hub
 from apprentice.session.store import SessionStore
 
@@ -12,6 +15,10 @@ router = APIRouter()
 
 def get_store(request: Request) -> SessionStore:
     return request.app.state.store
+
+
+def get_redactor(request: Request) -> Redactor:
+    return request.app.state.redactor
 
 
 def get_hub(request: Request) -> Hub:
@@ -87,9 +94,11 @@ async def post_transcript(
     body: TranscriptBody,
     store: SessionStore = Depends(get_store),
     hub: Hub = Depends(get_hub),
+    redactor: Redactor = Depends(get_redactor),
 ) -> dict:
     _require(store, session_id)
     line = body.model_dump()
+    line["text"] = await asyncio.to_thread(redactor.text, session_id, line["text"])
     store.append_transcript(session_id, line)
     await hub.publish(session_id, "transcript", line)
     return line
@@ -116,6 +125,7 @@ async def correct_event(
     body: EventCorrection,
     store: SessionStore = Depends(get_store),
     hub: Hub = Depends(get_hub),
+    redactor: Redactor = Depends(get_redactor),
 ) -> dict:
     """The expert fixes what the apprentice saw. Re-appended under the same id: the store
     folds by id, so the correction replaces the event in place and the log stays append-only."""
@@ -128,6 +138,7 @@ async def correct_event(
         corrected = Event.model_validate({**current, **patch}).model_dump()
     except ValidationError as e:
         raise HTTPException(422, str(e)) from None
+    corrected = await asyncio.to_thread(redactor.event, session_id, corrected)
     corrected["corrected"] = True
     store.append_event(session_id, corrected)
     await hub.publish(session_id, "event", corrected)
