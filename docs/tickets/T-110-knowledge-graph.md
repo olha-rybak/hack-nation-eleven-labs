@@ -1,5 +1,5 @@
 # T-110 · Knowledge graph — don't ask what we already know
-**Lane C · depends on: T-103, T-107 (answers to store)**
+**Lane C · owner: Olha · depends on: T-103, T-107 (answers to store)**
 
 A store of what the expert has told us that persists across sessions, so the interviewer never re-asks a
 question answered last week. It stores *facts*, not a Q&A log: a repeated answer adds a quote to an

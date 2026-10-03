@@ -1,5 +1,5 @@
 # T-108 · What to ask — question selection
-**Lane C · depends on: T-103, T-109**
+**Lane C · owner: Olha · depends on: T-103, T-109**
 
 Given the event log, the environment brief and the questions already asked, pick the *one* question worth
 the interruption. Ranking, highest first:

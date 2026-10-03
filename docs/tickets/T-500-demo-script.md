@@ -1,5 +1,5 @@
 # T-500 · Demo script + dry runs
-**Lane C · depends on: T-109, T-204, T-303**
+**Lane C · owner: Olha · depends on: T-109, T-204, T-303**
 
 The demo is the deliverable. Write and rehearse the run from the brief's *What Good Looks Like*:
 

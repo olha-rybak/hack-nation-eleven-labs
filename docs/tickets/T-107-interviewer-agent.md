@@ -1,5 +1,5 @@
 # T-107 · ElevenAgents interviewer — voice setup
-**Lane C · depends on: T-106**
+**Lane C · owner: Olha · depends on: T-106**
 
 Create the interviewer agent in ElevenLabs: Expressive Mode, a curious and patient voice, Scribe v2
 Realtime for transcription, custom LLM pointed at our proxy. Register client tools:

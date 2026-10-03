@@ -6,7 +6,7 @@ Owner lanes (from the pipeline diagram):
 |---|---|---|
 | **A** | Web app, fake ERP, UI | T-002, T-100, T-101, T-102, T-200, T-202, T-301, T-400 |
 | **B** | Local model, backend, data | T-001, T-103, T-104, T-105, T-106, T-201, T-300, T-401 |
-| **C** | Prompts, ElevenLabs agents, demo | T-107, T-108, T-109, T-110, T-203, T-204, T-302, T-303, T-500, T-501 |
+| **C** (Olha) | Prompts, ElevenLabs agents, demo | T-107, T-108, T-109, T-110, T-203, T-204, T-302, T-303, T-500, T-501 |
 
 ## Order of attack
 

@@ -1,5 +1,5 @@
 # T-109 · Environment config pack + priming brief
-**Lane C · depends on: T-001**
+**Lane C · owner: Olha · depends on: T-001**
 
 Fill `config/environment/` for the fake ERP: `app.md` (what it is, the screens), `glossary.md` (every
 field, with the values it can take), `rules.md` (only what a real company would actually have written
