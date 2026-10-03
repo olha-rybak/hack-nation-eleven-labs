@@ -62,6 +62,9 @@ const $ = (id) => document.getElementById(id);
 const agentInput = $("agentId");
 const params = new URLSearchParams(location.search);
 try { agentInput.value = params.get("agent") || localStorage.getItem("agentId") || ""; } catch {}
+if (!agentInput.value) {
+  fetch("/config").then((r) => r.json()).then((c) => { agentInput.value ||= c.agent_id; }).catch(() => {});
+}
 
 let conversation = null;
 let seen = 0;            // how many events from /events we have already forwarded
@@ -114,7 +117,10 @@ $("start").onclick = async () => {
       agentId,
       connectionType: "webrtc",
       onConnect: () => { $("status").textContent = "connected"; $("ask").disabled = false; $("stop").disabled = false; },
-      onDisconnect: () => {
+      onDisconnect: (details) => {
+        clearInterval(pollTimer);
+        const why = details?.closeReason || details?.message || details?.reason;
+        if (why && details?.reason !== "user") logMsg("disconnected", why, "cue");
         $("status").textContent = "disconnected";
         $("ask").disabled = true; $("stop").disabled = true; $("start").disabled = false;
         conversation = null;

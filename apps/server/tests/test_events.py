@@ -48,3 +48,9 @@ def test_page_prompts_and_fixtures_are_served(api):
     assert "ASK_NOW" in api.get("/prompts/interviewer/system.md").text
     assert api.get("/prompts/interviewer/ask_now.md").text.strip() == "ASK_NOW"
     assert api.get("/fixtures/events.json").json() == FIXTURE
+
+
+def test_config_returns_agent_id_from_settings(api, monkeypatch):
+    configured = Settings(ELEVENLABS_INTERVIEWER_AGENT_ID="agent_test")
+    monkeypatch.setattr("apprentice.interviewer.get_settings", lambda: configured)
+    assert api.get("/config").json() == {"agent_id": "agent_test"}
