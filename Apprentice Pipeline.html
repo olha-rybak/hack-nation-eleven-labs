@@ -1,0 +1,309 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Apprentice Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one wide schematic in a scroll box, then the parts explained phase by phase in a two-column card grid */
+:root {
+  --bg: #f6f7f8;
+  --surface: #ffffff;
+  --ink: #16202a;
+  --muted: #5a6672;
+  --line: #9aa6b2;
+  --rule: #dfe4e9;
+  --band: #eceff2;
+  --accent: #0e7a6f;
+  --accent-soft: rgba(14, 122, 111, 0.12);
+  --font-display: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161b; --surface: #182027; --ink: #e6ebf0; --muted: #9aa7b3;
+    --line: #6b7884; --rule: #2a343d; --band: #1a2229;
+    --accent: #3cc4b4; --accent-soft: rgba(60, 196, 180, 0.14);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161b; --surface: #182027; --ink: #e6ebf0; --muted: #9aa7b3;
+  --line: #6b7884; --rule: #2a343d; --band: #1a2229;
+  --accent: #3cc4b4; --accent-soft: rgba(60, 196, 180, 0.14);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1000px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 64px; display: grid; gap: 36px; }
+header { display: grid; gap: 8px; max-width: 64ch; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--font-display); font-size: clamp(28px, 4vw, 36px); font-weight: 700; line-height: 1.15; margin: 0; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; }
+.diagram { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 12px; overflow-x: auto; }
+.diagram svg { display: block; width: 100%; min-width: 760px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding: 10px 6px 2px; }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.legend i { display: inline-block; width: 26px; border-top: 1.5px solid var(--line); }
+.legend i.dash { border-top-style: dashed; }
+.legend i.box { width: 14px; height: 14px; border: 2px solid var(--accent); background: var(--accent-soft); border-radius: 3px; }
+
+/* svg */
+.band { fill: var(--band); }
+.band-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; fill: var(--muted); }
+.node rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.25; transition: stroke 0.15s, fill 0.15s; }
+.node.main rect { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+.node .name { font-family: var(--font-body); font-size: 14px; font-weight: 600; fill: var(--ink); }
+.node .sub { font-family: var(--font-body); font-size: 12px; fill: var(--muted); }
+.node { cursor: pointer; outline: none; }
+.node:hover rect, .node:focus-visible rect, .node.lit rect { stroke: var(--accent); stroke-width: 2.5; }
+.wire { fill: none; stroke: var(--line); stroke-width: 1.4; }
+.wire.dash { stroke-dasharray: 5 4; }
+.arrowhead { fill: var(--line); }
+.wire-label { font-family: var(--font-mono); font-size: 11px; fill: var(--muted); }
+
+/* cards */
+.phase { display: grid; gap: 14px; }
+.phase h2 { font-family: var(--font-display); font-size: 20px; margin: 0; display: flex; align-items: baseline; gap: 12px; }
+.phase h2 small { font-family: var(--font-mono); font-size: 12px; font-weight: 400; color: var(--muted); letter-spacing: 0.04em; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; display: grid; gap: 6px; align-content: start; min-width: 0; transition: border-color 0.15s, box-shadow 0.15s; scroll-margin-top: 24px; }
+.card.lit { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card.main { background: var(--accent-soft); border-color: var(--accent); }
+.card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.card h3 { font-size: 16px; margin: 0; }
+.owner { font-family: var(--font-mono); font-size: 11px; color: var(--muted); border: 1px solid var(--rule); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+.card p { margin: 0; color: var(--ink); }
+.card code { font-family: var(--font-mono); font-size: 13px; }
+footer { font-size: 13px; color: var(--muted); max-width: 64ch; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">AI Apprentice · Hack-Nation × ElevenLabs</div>
+    <h1>How the apprentice works, end to end</h1>
+    <p class="lead">One local model does all the seeing and thinking, primed beforehand by a config folder about the app. ElevenLabs handles the voice. The expert's session becomes a Work Map, and the Work Map becomes a tutor. Tap any box to jump to its description.</p>
+  </header>
+
+  <section class="diagram" aria-label="Pipeline diagram">
+    <svg viewBox="0 0 960 500" role="img" aria-label="Pipeline: capture with one local model, then debrief into a Work Map, then a tutor for the new hire">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path class="arrowhead" d="M0 0L10 5L0 10z"></path>
+        </marker>
+      </defs>
+
+      <!-- bands -->
+      <rect class="band" x="8" y="36" width="944" height="298" rx="10"></rect>
+      <text class="band-label" x="24" y="58">1 · CAPTURE — expert works, apprentice watches and asks</text>
+      <rect class="band" x="8" y="372" width="464" height="116" rx="10"></rect>
+      <text class="band-label" x="24" y="392">2 · MAP</text>
+      <rect class="band" x="488" y="372" width="464" height="116" rx="10"></rect>
+      <text class="band-label" x="504" y="392">3 · TEACH</text>
+
+      <!-- wires -->
+      <path class="wire" d="M204 102H262" marker-end="url(#ah)"></path>
+      <text class="wire-label" x="233" y="94" text-anchor="middle">share</text>
+      <path class="wire" d="M444 102H502" marker-end="url(#ah)"></path>
+      <text class="wire-label" x="473" y="94" text-anchor="middle">frames</text>
+      <path class="wire" d="M684 102H754" marker-end="url(#ah)"></path>
+      <text class="wire-label" x="719" y="94" text-anchor="middle">events</text>
+      <path class="wire" d="M354 134V158" marker-end="url(#ah)"></path>
+      <text class="wire-label" x="362" y="151">screen still?</text>
+      <path class="wire" d="M354 224V248" marker-end="url(#ah)"></path>
+      <text class="wire-label" x="362" y="241">ask now</text>
+      <path class="wire" d="M206 282H262" marker-start="url(#ah)" marker-end="url(#ah)"></path>
+      <text class="wire-label" x="233" y="274" text-anchor="middle">speech</text>
+      <path class="wire" d="M446 282H502" marker-start="url(#ah)" marker-end="url(#ah)"></path>
+      <text class="wire-label" x="473" y="274" text-anchor="middle">turns</text>
+      <path class="wire" d="M936 102H946V354H114V402" marker-end="url(#ah)"></path>
+      <text class="wire-label" x="938" y="300" text-anchor="end">end task</text>
+      <path class="wire" d="M756 192H686" marker-end="url(#ah)"></path>
+      <text class="wire-label" x="720" y="184" text-anchor="middle">context</text>
+      <path class="wire" d="M204 436H262" marker-end="url(#ah)"></path>
+      <text class="wire-label" x="233" y="428" text-anchor="middle">confirmed</text>
+      <path class="wire" d="M444 436H502" marker-end="url(#ah)"></path>
+      <text class="wire-label" x="473" y="428" text-anchor="middle">loads</text>
+      <path class="wire" d="M684 436H754" marker-end="url(#ah)"></path>
+      <text class="wire-label" x="719" y="428" text-anchor="middle">result</text>
+      <path class="wire dash" d="M594 404V316" marker-end="url(#ah)"></path>
+      <text class="wire-label" x="586" y="346" text-anchor="end">same loop, new hire's screen</text>
+
+      <!-- nodes -->
+      <g class="node" data-node="screen" tabindex="0" role="button" aria-label="Expert's screen">
+        <rect x="24" y="70" width="180" height="64" rx="10"></rect>
+        <text class="name" x="40" y="97">Expert's screen</text>
+        <text class="sub" x="40" y="117">fake ERP, real task</text>
+      </g>
+      <g class="node" data-node="sampler" tabindex="0" role="button" aria-label="Frame sampler">
+        <rect x="264" y="70" width="180" height="64" rx="10"></rect>
+        <text class="name" x="280" y="97">Frame sampler</text>
+        <text class="sub" x="280" y="117">1 fps, keeps changes</text>
+      </g>
+      <g class="node" data-node="pause" tabindex="0" role="button" aria-label="Pause detector">
+        <rect x="264" y="160" width="180" height="64" rx="10"></rect>
+        <text class="name" x="280" y="187">Pause detector</text>
+        <text class="sub" x="280" y="207">decides when to ask</text>
+      </g>
+      <g class="node main" data-node="model" tabindex="0" role="button" aria-label="Nemotron Omni">
+        <rect x="504" y="70" width="180" height="244" rx="10"></rect>
+        <text class="name" x="520" y="166">Nemotron Omni</text>
+        <text class="sub" x="520" y="188">on your RTX 5080</text>
+        <text class="sub" x="520" y="208">screen → events</text>
+        <text class="sub" x="520" y="228">voice turns → replies</text>
+      </g>
+      <g class="node" data-node="log" tabindex="0" role="button" aria-label="Session log">
+        <rect x="756" y="70" width="180" height="64" rx="10"></rect>
+        <text class="name" x="772" y="97">Session log</text>
+        <text class="sub" x="772" y="117">events + transcript</text>
+      </g>
+      <g class="node" data-node="config" tabindex="0" role="button" aria-label="Environment config">
+        <rect x="756" y="160" width="180" height="64" rx="10"></rect>
+        <text class="name" x="772" y="187">Environment config</text>
+        <text class="sub" x="772" y="207">read before the session</text>
+      </g>
+      <g class="node" data-node="voice" tabindex="0" role="button" aria-label="Expert's voice">
+        <rect x="24" y="250" width="180" height="64" rx="10"></rect>
+        <text class="name" x="40" y="277">Expert's voice</text>
+        <text class="sub" x="40" y="297">mic in, speaker out</text>
+      </g>
+      <g class="node" data-node="agent" tabindex="0" role="button" aria-label="ElevenLabs agent">
+        <rect x="264" y="250" width="180" height="64" rx="10"></rect>
+        <text class="name" x="280" y="277">ElevenLabs agent</text>
+        <text class="sub" x="280" y="297">listens and speaks</text>
+      </g>
+      <g class="node" data-node="debrief" tabindex="0" role="button" aria-label="Debrief">
+        <rect x="24" y="404" width="180" height="64" rx="10"></rect>
+        <text class="name" x="40" y="431">Debrief</text>
+        <text class="sub" x="40" y="451">gaps, then teach-back</text>
+      </g>
+      <g class="node" data-node="workmap" tabindex="0" role="button" aria-label="Work Map">
+        <rect x="264" y="404" width="180" height="64" rx="10"></rect>
+        <text class="name" x="280" y="431">Work Map</text>
+        <text class="sub" x="280" y="451">timeline + Obsidian</text>
+      </g>
+      <g class="node" data-node="tutor" tabindex="0" role="button" aria-label="Tutor">
+        <rect x="504" y="404" width="180" height="64" rx="10"></rect>
+        <text class="name" x="520" y="431">Tutor</text>
+        <text class="sub" x="520" y="451">coaches the new hire</text>
+      </g>
+      <g class="node" data-node="report" tabindex="0" role="button" aria-label="Progress report">
+        <rect x="756" y="404" width="180" height="64" rx="10"></rect>
+        <text class="name" x="772" y="431">Progress report</text>
+        <text class="sub" x="772" y="451">mastered vs. practice</text>
+      </g>
+    </svg>
+    <div class="legend">
+      <span><i></i>data flow</span>
+      <span><i class="dash"></i>reuses the capture loop</span>
+      <span><i class="box"></i>the one model</span>
+    </div>
+  </section>
+
+  <section class="phase">
+    <h2>Capture <small>the expert works, the apprentice asks why</small></h2>
+    <div class="cards">
+      <article class="card" id="c-config" data-node="config">
+        <div class="card-head"><h3>Environment config</h3><span class="owner">C</span></div>
+        <p>A folder about the app: what it is, a glossary of every field, the rules that are already written down, a few captioned screenshots and today's task. At session start the model reads it once and writes an environment brief that stays in its context, so it names fields correctly and only asks about what the docs leave out.</p>
+      </article>
+      <article class="card" id="c-screen" data-node="screen">
+        <div class="card-head"><h3>Expert's screen</h3><span class="owner">A</span></div>
+        <p>The fake ERP in a browser tab, shared with the apprentice. The expert processes real-looking invoices and talks while working.</p>
+      </article>
+      <article class="card" id="c-sampler" data-node="sampler">
+        <div class="card-head"><h3>Frame sampler</h3><span class="owner">A</span></div>
+        <p>Grabs one screenshot per second, saves every frame with its timestamp, and forwards only frames that actually changed.</p>
+      </article>
+      <article class="card" id="c-pause" data-node="pause">
+        <div class="card-head"><h3>Pause detector</h3><span class="owner">A</span></div>
+        <p>Waits for a still screen (4 s) and silence (3 s), with a 60 s cooldown and at most 5 questions. Then it tells the agent: ask now.</p>
+      </article>
+      <article class="card main" id="c-model" data-node="model">
+        <div class="card-head"><h3>Nemotron Omni</h3><span class="owner">B</span></div>
+        <p>The one model, running locally in llama-server with two slots. It turns frame changes into events like <code>cost center 4711 → 0400</code>, and writes every reply the agent speaks from the latest frames and event log.</p>
+      </article>
+      <article class="card" id="c-agent" data-node="agent">
+        <div class="card-head"><h3>ElevenLabs agent</h3><span class="owner">C</span></div>
+        <p>Handles the voice: speech-to-text, turn-taking and the spoken reply. It sends each turn to our proxy, which calls Nemotron, and stays quiet while the expert narrates.</p>
+      </article>
+      <article class="card" id="c-voice" data-node="voice">
+        <div class="card-head"><h3>Expert's voice</h3><span class="owner">expert</span></div>
+        <p>The expert's answers in their own words. These quotes become the reasons and guardrails in the Work Map.</p>
+      </article>
+      <article class="card" id="c-log" data-node="log">
+        <div class="card-head"><h3>Session log</h3><span class="owner">B</span></div>
+        <p>Everything from the session on disk: events, timestamped transcript and saved frames. Off-the-record deletes the last 30 seconds here.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="phase">
+    <h2>Map <small>the session becomes a confirmed process</small></h2>
+    <div class="cards">
+      <article class="card" id="c-debrief" data-node="debrief">
+        <div class="card-head"><h3>Debrief</h3><span class="owner">C</span></div>
+        <p>After the expert clicks End task, the agent asks the 3+ questions it still has, then explains the whole process back until the expert says yes, that is how it works.</p>
+      </article>
+      <article class="card" id="c-workmap" data-node="workmap">
+        <div class="card-head"><h3>Work Map</h3><span class="owner">B + A</span></div>
+        <p>Steps, decisions, reasons and guardrails, each tied to a screen frame and a quote. Shown as a clickable timeline and exported as an Obsidian vault.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="phase">
+    <h2>Teach <small>the Work Map coaches the next person</small></h2>
+    <div class="cards">
+      <article class="card" id="c-tutor" data-node="tutor">
+        <div class="card-head"><h3>Tutor</h3><span class="owner">C</span></div>
+        <p>The same capture loop on the new hire's screen, with the Work Map loaded. It checks every event against the guardrails, steps in before a wrong save and replays the expert's frame.</p>
+      </article>
+      <article class="card" id="c-report" data-node="report">
+        <div class="card-head"><h3>Progress report</h3><span class="owner">A</span></div>
+        <p>What the new hire did right, which guardrails they hit, and what to practice next.</p>
+      </article>
+    </div>
+  </section>
+
+  <footer>Owner letters match the team split in the build plan: A web app and fake ERP, B local model and backend, C prompts, agent and demo.</footer>
+</div>
+
+<script>
+(function () {
+  var nodes = document.querySelectorAll('.node');
+  var cards = document.querySelectorAll('.card');
+  function light(key, on) {
+    document.querySelectorAll('[data-node="' + key + '"]').forEach(function (el) {
+      el.classList.toggle('lit', on);
+    });
+  }
+  function go(key) {
+    var card = document.getElementById('c-' + key);
+    if (!card) return;
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    card.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    light(key, true);
+    setTimeout(function () { light(key, false); }, 1400);
+  }
+  nodes.forEach(function (n) {
+    var key = n.getAttribute('data-node');
+    n.addEventListener('mouseenter', function () { light(key, true); });
+    n.addEventListener('mouseleave', function () { light(key, false); });
+    n.addEventListener('focus', function () { light(key, true); });
+    n.addEventListener('blur', function () { light(key, false); });
+    n.addEventListener('click', function () { go(key); });
+    n.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(key); }
+    });
+  });
+  cards.forEach(function (c) {
+    var key = c.getAttribute('data-node');
+    c.addEventListener('mouseenter', function () { light(key, true); });
+    c.addEventListener('mouseleave', function () { light(key, false); });
+  });
+})();
+</script>
+
+</body></html>
