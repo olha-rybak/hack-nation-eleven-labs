@@ -29,5 +29,8 @@ without a citation — the brief requires that every step and guardrail links to
 expert's own words, and a silently uncited step is exactly the "summary written from the transcript"
 failure mode.
 
+**Proposal (needs lane B to agree):** add `"never_do"` to `Guardrail.kind`. The brief asks the agent to
+learn "what they would never do", and that doesn't fit limit / exception / stop-and-ask.
+
 **Acceptance:** schema round-trips through JSON; a fixture Work Map missing a quote fails validation with
 a message naming the step.

@@ -110,6 +110,14 @@ persisted. Question 5 of the Apprentice Test is about trust, so this is demoed, 
 
 ## Working on this
 
+- **Branch and PR, never push to main.** Three of us work in parallel. One branch per ticket, named
+  after it (`t-002-frontend-scaffold`), cut from a fresh `origin/main`. Open a PR and let a teammate
+  merge it. Keep a PR to one ticket so conflicts stay small.
+- **No AI slop.** No comments that restate the code, no emoji, no lorem ipsum, no marketing copy
+  ("seamlessly", "empower"), no dead code or abstractions for cases we don't have. UI text is plain and
+  specific. Read generated code and text before committing it.
+- **No AI attribution.** No `Co-Authored-By: Claude` trailers, session links or "Generated with Claude
+  Code" lines in commits, PR descriptions or code.
 - **Ticket-driven.** `docs/tickets/` holds the board. Each ticket names its owner lane (A = web app and
   fake ERP, B = local model and backend, C = prompts, agent and demo), its dependencies and its
   acceptance check. Pick up a ticket, don't invent parallel work.
