@@ -11,5 +11,9 @@ followed by her actual screen moment.
 Reuse the capture components rather than forking them; the only differences are the loaded Work Map, the
 guardrail checks and who is being asked the questions.
 
+**Note:** the brief also asks the tutor to have the new hire *predict the next decision*. When a case
+opens, the overlay shows the prompt (T-302 decides the wording) without the answer. The end-of-case report
+from T-303 renders in this overlay.
+
 **Acceptance:** the tutor page runs a full case on a second machine, and an intervention displays the
 expert's frame and quote within ~2s of the triggering edit.
