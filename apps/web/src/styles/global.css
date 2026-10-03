@@ -1,51 +1,62 @@
-/* Visual language follows apple.com: near-black text on #f5f5f7, white tiles without
-   borders or shadows, one blue for actions and links, pill buttons, SF type with
-   size-specific tracking. Colour is reserved for the few things that must stand out. */
+/* Design tokens from apple-DESIGN.md (repo root of the hackathon folder).
+   One accent: Action Blue, on interactive elements only. Emphasis comes from
+   switching surface (light tile -> dark tile), never from a second colour.
+   The only shadow in the system sits under screen frames, our "product". */
 
 :root {
-  --bg: #f5f5f7;
-  --surface: #ffffff;
-  --fill: #e8e8ed;
-  --text: #1d1d1f;
-  --text-2: #6e6e73;
-  --text-3: #86868b;
-  --hairline: #d2d2d7;
-  --link: #0066cc;
-  --action: #0071e3;
-  --action-hover: #0077ed;
-  --flag: #b64400;
-  --material: rgba(255, 255, 255, 0.72);
-  --scrim: rgba(0, 0, 0, 0.48);
+  --primary: #0066cc;
+  --primary-focus: #0071e3;
+  --primary-on-dark: #2997ff;
+  --ink: #1d1d1f;
+  --ink-muted-80: #333333;
+  --ink-muted-48: #7a7a7a;
+  --body-muted: #cccccc;
+  --hairline: #e0e0e0;
+  --divider-soft: #f0f0f0;
+  --canvas: #ffffff;
+  --parchment: #f5f5f7;
+  --pearl: #fafafc;
+  --tile-1: #272729;
+  --tile-2: #2a2a2c;
+  --black: #000000;
+  --chip: rgba(210, 210, 215, 0.64);
+  --product-shadow: rgba(0, 0, 0, 0.22) 3px 5px 30px 0;
 
-  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  /* Theme roles */
+  --page: var(--parchment);
+  --surface: var(--canvas);
+  --text: var(--ink);
+  --muted: var(--ink-muted-48);
+  --link: var(--primary);
+  --line: var(--hairline);
+
+  --font-display: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  --font-text: 'SF Pro Text', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
   --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --r-sm: 8px;
+  --r-md: 11px;
+  --r-lg: 18px;
+  --r-pill: 9999px;
   --panel-width: 360px;
-  --radius-tile: 18px;
 
   color-scheme: light dark;
-  font: 17px/1.47 var(--font);
-  letter-spacing: -0.022em;
+  font: 400 17px/1.47 var(--font-text);
+  letter-spacing: -0.374px;
   color: var(--text);
-  background: var(--bg);
+  background: var(--page);
   -webkit-font-smoothing: antialiased;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #000000;
-    --surface: #1d1d1f;
-    --fill: #2c2c2e;
-    --text: #f5f5f7;
-    --text-2: #a1a1a6;
-    --text-3: #86868b;
-    --hairline: #424245;
-    --link: #2997ff;
-    --action: #0071e3;
-    --action-hover: #0077ed;
-    --flag: #f56300;
-    --material: rgba(22, 22, 23, 0.8);
-    --scrim: rgba(0, 0, 0, 0.6);
+    --page: var(--black);
+    --surface: var(--tile-1);
+    --text: #ffffff;
+    --muted: var(--body-muted);
+    --link: var(--primary-on-dark);
+    --line: rgba(255, 255, 255, 0.12);
+    --chip: rgba(66, 66, 69, 0.72);
   }
 }
 
@@ -69,7 +80,7 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid var(--action);
+  outline: 2px solid var(--primary-focus);
   outline-offset: 2px;
 }
 
@@ -78,49 +89,68 @@ code {
   font-size: 0.88em;
 }
 
-/* Buttons and links */
+/* Buttons */
 
 .button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 11px 21px;
+  padding: 11px 22px;
   border: 1px solid transparent;
-  border-radius: 980px;
-  background: var(--action);
+  border-radius: var(--r-pill);
+  background: var(--primary);
   color: #fff;
-  font-size: 17px;
-  line-height: 1.18;
-  letter-spacing: -0.022em;
+  font: 400 17px/1.18 var(--font-text);
+  letter-spacing: -0.374px;
   text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
-  transition: background 150ms ease, transform 120ms ease-out;
-}
-
-.button:hover {
-  background: var(--action-hover);
+  transition: transform 120ms ease-out;
 }
 
 .button:active {
-  transform: scale(0.98);
+  transform: scale(0.95);
 }
 
 .button:disabled {
-  opacity: 0.42;
+  background: var(--hairline);
+  color: var(--ink-muted-48);
   cursor: default;
+  transform: none;
 }
 
-.button.secondary {
-  background: var(--fill);
+.button.ghost {
+  background: transparent;
+  border-color: var(--link);
+  color: var(--link);
+}
+
+.button.compact {
+  padding: 6px 15px;
+  font-size: 14px;
+  letter-spacing: -0.224px;
+}
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--chip);
   color: var(--text);
+  cursor: pointer;
+  transition: transform 120ms ease-out;
 }
 
-.button.small {
-  min-height: 28px;
-  padding: 4px 12px;
-  font-size: 12px;
-  letter-spacing: -0.01em;
+.icon-button:active {
+  transform: scale(0.95);
+}
+
+.icon-button svg {
+  width: 16px;
+  height: 16px;
 }
 
 .link {
@@ -137,10 +167,10 @@ code {
 }
 
 .link.more::after {
-  content: ' \203A';
+  content: '\00a0\203A';
 }
 
-/* Shell: Apple's local-nav pattern */
+/* Global nav: thin, true black, 12px links */
 
 .shell {
   display: grid;
@@ -148,51 +178,47 @@ code {
   height: 100%;
 }
 
-.topbar {
-  position: relative;
-  z-index: 5;
+.globalnav {
   display: flex;
   align-items: center;
-  gap: 24px;
-  height: 52px;
+  gap: 32px;
+  height: 44px;
   padding: 0 22px;
-  background: var(--material);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
-}
-
-.brand {
-  font-family: var(--font-display);
-  font-size: 21px;
-  font-weight: 600;
-  letter-spacing: 0.011em;
-  white-space: nowrap;
-}
-
-.modes {
-  display: flex;
-  gap: 22px;
-  margin-left: auto;
-}
-
-.modes a {
-  color: var(--text);
+  background: var(--black);
+  color: #fff;
   font-size: 12px;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.12px;
+  line-height: 1;
+}
+
+.globalnav .brand {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.224px;
+  text-decoration: none;
   white-space: nowrap;
+}
+
+.globalnav nav {
+  display: flex;
+  gap: 32px;
+}
+
+.globalnav a {
+  color: #fff;
   text-decoration: none;
   opacity: 0.8;
+  white-space: nowrap;
 }
 
-.modes a:hover {
-  color: var(--link);
+.globalnav a:hover,
+.globalnav a.active {
   opacity: 1;
 }
 
-.modes a.active {
-  opacity: 0.56;
-  cursor: default;
+.globalnav .globalnav-erp {
+  margin-left: auto;
 }
 
 /* Session layout: main stage + right side panel */
@@ -205,7 +231,11 @@ code {
 
 .stage {
   overflow: auto;
-  padding: 56px 48px 80px;
+  padding: 80px 48px;
+}
+
+.stage.bleed {
+  padding: 0;
 }
 
 .side-panel {
@@ -213,35 +243,35 @@ code {
   flex-direction: column;
   min-height: 0;
   background: var(--surface);
+  border-left: 1px solid var(--line);
 }
 
 .side-panel h2 {
   margin: 0;
-  padding: 20px 20px 8px;
-  font-family: var(--font-display);
-  font-size: 21px;
-  font-weight: 600;
-  letter-spacing: 0.011em;
+  padding: 24px 24px 12px;
+  font: 600 21px/1.19 var(--font-display);
+  letter-spacing: 0.231px;
 }
 
 .side-panel .empty {
-  padding: 4px 20px;
-  color: var(--text-2);
+  padding: 0 24px;
+  color: var(--muted);
   font-size: 14px;
-  letter-spacing: -0.016em;
+  line-height: 1.43;
+  letter-spacing: -0.224px;
 }
 
-/* Conversation, in the shape of Messages: the apprentice on the right in blue */
+/* Conversation. The apprentice's turns sit on a dark tile, the expert's on parchment. */
 
 .transcript {
   flex: 1;
   overflow-y: auto;
   margin: 0;
-  padding: 8px 16px 24px;
+  padding: 4px 16px 24px;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .line {
@@ -258,10 +288,11 @@ code {
 .line-meta {
   display: flex;
   gap: 6px;
-  padding: 0 12px 3px;
+  padding: 0 14px 4px;
+  color: var(--muted);
   font-size: 12px;
-  letter-spacing: -0.01em;
-  color: var(--text-3);
+  letter-spacing: -0.12px;
+  line-height: 1;
 }
 
 .line-meta time {
@@ -271,17 +302,29 @@ code {
 .line p {
   max-width: 88%;
   margin: 0;
-  padding: 8px 13px;
-  border-radius: 18px;
-  background: var(--fill);
-  font-size: 15px;
-  line-height: 1.35;
-  letter-spacing: -0.016em;
+  padding: 9px 14px;
+  border-radius: var(--r-lg);
+  background: var(--parchment);
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
 }
 
 .line.agent p {
-  background: var(--action);
+  background: var(--tile-1);
   color: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .line p {
+    background: var(--tile-2);
+    color: #fff;
+  }
+
+  .line.agent p {
+    background: #3a3a3c;
+  }
 }
 
 @keyframes line-in {
@@ -294,64 +337,70 @@ code {
 /* Placeholders until each module's ticket lands */
 
 .placeholder {
-  max-width: 640px;
+  max-width: 980px;
 }
 
 .placeholder h1 {
   margin: 0 0 12px;
-  font-family: var(--font-display);
-  font-size: 48px;
-  font-weight: 600;
-  line-height: 1.08;
-  letter-spacing: -0.003em;
+  font: 600 56px/1.07 var(--font-display);
+  letter-spacing: -0.28px;
 }
 
 .placeholder p {
-  margin: 0 0 24px;
-  color: var(--text-2);
-  font-size: 21px;
-  line-height: 1.38;
-  letter-spacing: 0.011em;
+  margin: 0 0 32px;
+  color: var(--muted);
+  font: 400 28px/1.14 var(--font-display);
+  letter-spacing: 0.196px;
 }
 
 .placeholder .todo {
-  font-size: 14px;
-  letter-spacing: -0.016em;
+  font: 400 14px/1.43 var(--font-text);
+  letter-spacing: -0.224px;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 1068px) {
+  .placeholder h1 {
+    font-size: 40px;
+    line-height: 1.1;
+    letter-spacing: 0;
+  }
+}
+
+@media (max-width: 833px) {
   .session-layout {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(240px, 40vh);
   }
 
   .side-panel {
-    box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.08);
+    border-left: 0;
+    border-top: 1px solid var(--line);
   }
 
   .stage {
-    padding: 32px 20px 48px;
+    padding: 48px 20px;
   }
 
-  .topbar {
-    gap: 16px;
+  .globalnav,
+  .globalnav nav {
+    gap: 20px;
+  }
+
+  .globalnav {
     padding: 0 16px;
   }
 
-  .topbar .button {
+  .globalnav .globalnav-erp {
     display: none;
   }
 
-  .modes {
-    gap: 16px;
-  }
-
   .placeholder h1 {
-    font-size: 32px;
+    font-size: 34px;
   }
 
   .placeholder p {
-    font-size: 19px;
+    font-size: 21px;
+    line-height: 1.19;
   }
 }
 
@@ -360,7 +409,8 @@ code {
     animation: none;
   }
 
-  .button {
+  .button,
+  .icon-button {
     transition: none;
   }
 }

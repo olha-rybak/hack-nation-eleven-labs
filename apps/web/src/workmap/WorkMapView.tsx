@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import { formatTs } from '../lib/time'
 import type { Guardrail, GuardrailKind, Quote, Step, WorkMap } from '../types/workmap'
 import { frameUrl } from './api'
@@ -65,86 +66,98 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
 
   return (
     <div className="wm">
-      <header className="wm-hero">
-        <p className="wm-eyebrow">Work Map · session {map.session_id}</p>
-        <h1>{map.title}</h1>
-        <p className="wm-sub">
-          {map.confirmed_at
-            ? `Learned from ${expert}. Confirmed by ${expert} on ${formatConfirmed(map.confirmed_at)}.`
-            : `Learned from ${expert}. Draft: ${expert} has not confirmed the teach-back yet.`}
-        </p>
-        <dl className="wm-counts">
-          <div>
-            <dt>steps</dt>
-            <dd>{map.steps.length}</dd>
+      <nav className="wm-subnav" aria-label="Work Map">
+        <span className="wm-subnav-title">Work Map</span>
+        <div className="wm-subnav-links">
+          <a href="#wm-guardrails">Guardrails</a>
+          <a href="#wm-steps">Steps</a>
+          <Link className="button compact" to={`/teach/${map.id}`}>
+            Teach a new hire
+          </Link>
+        </div>
+      </nav>
+
+      <header className="wm-band dark wm-hero">
+        <div className="wm-container">
+          <p className="wm-eyebrow">Learned from {expert}</p>
+          <h1>{map.title}</h1>
+          <p className="wm-lead">
+            {map.confirmed_at
+              ? `Confirmed by ${expert} on ${formatConfirmed(map.confirmed_at)}.`
+              : `Draft. ${expert} has not confirmed the teach-back yet.`}
+          </p>
+          <dl className="wm-counts">
+            <div>
+              <dt>steps</dt>
+              <dd>{map.steps.length}</dd>
+            </div>
+            <div>
+              <dt>judgment calls</dt>
+              <dd>{judgmentCalls}</dd>
+            </div>
+            <div>
+              <dt>guardrails</dt>
+              <dd>{map.guardrails.length}</dd>
+            </div>
+          </dl>
+          <div className="wm-ctas">
+            <Link className="button" to={`/teach/${map.id}`}>
+              Teach a new hire
+            </Link>
+            <a className="button ghost" href="#wm-steps">
+              Read the steps
+            </a>
           </div>
-          <div>
-            <dt>judgment calls</dt>
-            <dd>{judgmentCalls}</dd>
-          </div>
-          <div>
-            <dt>guardrails</dt>
-            <dd>{map.guardrails.length}</dd>
-          </div>
-        </dl>
+        </div>
       </header>
 
       {map.guardrails.length > 0 && (
-        <section aria-labelledby="wm-guardrails-title">
-          <div className="wm-section-head">
+        <section id="wm-guardrails" className="wm-band light" aria-labelledby="wm-guardrails-title">
+          <div className="wm-container">
             <h2 id="wm-guardrails-title">Guardrails</h2>
-            <p>
+            <p className="wm-intro">
               {selected
                 ? 'The highlighted steps follow this rule. Select it again to clear.'
                 : `The rules ${expert} applies. Select one to see the steps it governs.`}
             </p>
-          </div>
-          <div className="wm-guardrail-list">
-            {map.guardrails.map((g) => (
-              <article key={g.id} className="wm-tile wm-guardrail" aria-current={selected === g.id}>
-                <button type="button" className="wm-guardrail-main" aria-pressed={selected === g.id} onClick={() => toggle(g.id)}>
-                  <span className={`wm-kind ${g.kind}`}>{kindLabel[g.kind]}</span>
-                  <span className="wm-guardrail-statement">{g.statement}</span>
-                </button>
-                <p className="wm-guardrail-quote">
-                  “{g.reason.text}”
-                  <span>
+            <div className="wm-guardrail-list">
+              {map.guardrails.map((g) => (
+                <article key={g.id} className="wm-card wm-guardrail" aria-current={selected === g.id}>
+                  <button type="button" className="wm-guardrail-main" aria-pressed={selected === g.id} onClick={() => toggle(g.id)}>
+                    <span className="wm-kind">{kindLabel[g.kind]}</span>
+                    <span className="wm-guardrail-statement">{g.statement}</span>
+                  </button>
+                  <p className="wm-guardrail-quote">“{g.reason.text}”</p>
+                  <p className="wm-attrib">
                     {g.reason.speaker}, {sourceLabel[g.reason.source]}
-                  </span>
-                </p>
-                <button type="button" className="link more wm-moment" onClick={() => show(g.frame_ts, g.statement)}>
-                  Screen moment {formatTs(g.frame_ts)}
-                </button>
-              </article>
-            ))}
+                  </p>
+                  <button type="button" className="link more wm-moment" onClick={() => show(g.frame_ts, g.statement)}>
+                    Screen moment {formatTs(g.frame_ts)}
+                  </button>
+                </article>
+              ))}
+            </div>
           </div>
         </section>
       )}
 
-      <section aria-labelledby="wm-steps-title">
-        <div className="wm-section-head">
+      <section id="wm-steps" className="wm-band parchment" aria-labelledby="wm-steps-title">
+        <div className="wm-container">
           <h2 id="wm-steps-title">Steps</h2>
-          <p>What {expert} did, in order, and why.</p>
-        </div>
-        <ol className={`wm-steps ${selected ? 'filtering' : ''}`}>
-          {map.steps.map((step) => {
-            const rails = map.guardrails.filter((g) => step.guardrail_ids.includes(g.id))
-            const lit = selectedGuardrail ? governs(selectedGuardrail, step) : false
-            return (
-              <li
-                key={step.index}
-                id={`step-${step.index}`}
-                className={`wm-step ${step.is_judgment_call ? 'judgment' : ''} ${lit ? 'lit' : ''}`}
-              >
-                <div className="wm-rail" aria-hidden="true">
-                  <span className="wm-dot" />
-                </div>
-                <div className="wm-tile wm-card">
+          <p className="wm-intro">What {expert} did, in order, and why. Judgment calls are on dark tiles.</p>
+          <ol className={`wm-steps ${selected ? 'filtering' : ''}`}>
+            {map.steps.map((step) => {
+              const rails = map.guardrails.filter((g) => step.guardrail_ids.includes(g.id))
+              const lit = selectedGuardrail ? governs(selectedGuardrail, step) : false
+              return (
+                <li
+                  key={step.index}
+                  id={`step-${step.index}`}
+                  className={`wm-card wm-step ${step.is_judgment_call ? 'judgment' : ''} ${lit ? 'lit' : ''}`}
+                >
                   <p className="wm-step-eyebrow">
-                    <span>
-                      Step {step.index} · {formatTs(step.frame_ts)}
-                    </span>
-                    {step.is_judgment_call && <span className="wm-flag">Judgment call</span>}
+                    Step {step.index} · {formatTs(step.frame_ts)}
+                    {step.is_judgment_call && <strong> · Judgment call</strong>}
                   </p>
                   <h3>{step.title}</h3>
                   <div className="wm-step-body">
@@ -181,8 +194,8 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
                           {rails.map((g) => (
                             <li key={g.id}>
                               <button type="button" aria-pressed={selected === g.id} onClick={() => toggle(g.id)}>
-                                <span className={`wm-kind ${g.kind}`}>{kindLabel[g.kind]}</span>
-                                <span>{g.statement}</span>
+                                <span className="wm-kind">{kindLabel[g.kind]}</span>
+                                <span className="wm-rule">{g.statement}</span>
                               </button>
                             </li>
                           ))}
@@ -190,21 +203,23 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
                       )}
                     </div>
                   </div>
-                </div>
-              </li>
-            )
-          })}
-        </ol>
+                </li>
+              )
+            })}
+          </ol>
+        </div>
       </section>
 
       {map.open_questions.length > 0 && (
-        <section className="wm-tile wm-open" aria-labelledby="wm-open-title">
-          <h2 id="wm-open-title">Still unclear</h2>
-          <ul>
-            {map.open_questions.map((q) => (
-              <li key={q}>{q}</li>
-            ))}
-          </ul>
+        <section className="wm-band light" aria-labelledby="wm-open-title">
+          <div className="wm-container">
+            <h2 id="wm-open-title">Still unclear</h2>
+            <ul className="wm-open">
+              {map.open_questions.map((q) => (
+                <li key={q}>{q}</li>
+              ))}
+            </ul>
+          </div>
         </section>
       )}
 

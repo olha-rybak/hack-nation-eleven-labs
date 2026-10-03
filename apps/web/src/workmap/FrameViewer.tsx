@@ -29,8 +29,10 @@ export function FrameViewer({ moment, onClose }: { moment: FrameMoment; onClose:
         <figcaption>
           <time>{formatTs(moment.ts)}</time>
           <span>{moment.caption}</span>
-          <button type="button" className="button secondary small" onClick={onClose}>
-            Close
+          <button type="button" className="icon-button" onClick={onClose} aria-label="Close">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+              <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
+            </svg>
           </button>
         </figcaption>
       </figure>

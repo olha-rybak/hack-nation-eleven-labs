@@ -8,7 +8,7 @@ export function MapPage() {
   const state = useWorkMap(sessionId)
 
   return (
-    <SessionLayout sessionId={sessionId} panelTitle="Debrief">
+    <SessionLayout sessionId={sessionId} panelTitle="Debrief" bleed={state.status === 'ready'}>
       {state.status === 'ready' && <WorkMapView sessionId={sessionId} map={state.map} />}
       {state.status === 'loading' && <p className="placeholder">Loading the Work Map…</p>}
       {state.status === 'missing' && (
