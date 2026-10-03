@@ -1,5 +1,5 @@
 # T-103 · Frames → events (vision slot)
-**Lane B · depends on: T-001**
+**Lane B · owner: Hlib · depends on: T-001**
 
 `POST /ingest/frame` persists the frame and, when it differs from the last keyframe, sends the previous
 and current frame to slot 0 with the environment brief (T-109) in context. The model returns **events**,

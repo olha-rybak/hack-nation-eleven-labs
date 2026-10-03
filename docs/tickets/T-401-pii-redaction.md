@@ -1,5 +1,5 @@
 # T-401 · PII redaction with Presidio
-**Lane B · depends on: T-105**
+**Lane B · owner: Hlib · depends on: T-105**
 
 The second half of question 5: *how is personal data on screen protected?*
 

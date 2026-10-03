@@ -1,5 +1,5 @@
 # T-300 · Guardrail engine — catching it before the save
-**Lane B · depends on: T-200, T-103**
+**Lane B · owner: Hlib · depends on: T-200, T-103**
 
 Evaluate live events against a confirmed Work Map's guardrails and fire *before* a destructive action
 commits. The `GuardrailCheck` on each guardrail is the machine-evaluable form the LLM derived from the

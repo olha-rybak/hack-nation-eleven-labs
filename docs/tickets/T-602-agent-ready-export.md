@@ -1,5 +1,5 @@
 # T-602 · Agent-ready guardrails export
-**Lane B · stretch · depends on: T-300**
+**Lane B · stretch · owner: Hlib · depends on: T-300**
 
 Export the confirmed Work Map as instructions an agent can load — a system prompt built from the steps,
 the `GuardrailCheck` objects as tool-call preconditions, and an explicit stop list of the moments where

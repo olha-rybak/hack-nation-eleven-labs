@@ -1,5 +1,5 @@
 # T-104 · Pause detector — "ask now"
-**Lane B · depends on: T-103, T-107**
+**Lane B · owner: Hlib · depends on: T-103, T-107**
 
 Decide *when* the agent may speak. All thresholds from `.env`:
 
