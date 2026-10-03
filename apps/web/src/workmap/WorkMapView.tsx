@@ -34,8 +34,12 @@ function quoteMoment(quote: Quote, aboutTs: number): number {
   return quote.source === 'debrief' ? aboutTs : quote.ts_ms
 }
 
-const formatConfirmed = (iso: string) =>
-  new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+const formatConfirmed = (iso: string) => {
+  const d = new Date(iso)
+  const day = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })
+  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  return `${day} at ${time}`
+}
 
 export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMap }) {
   const [selected, setSelected] = useState<string | null>(null)
@@ -61,41 +65,43 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
 
   return (
     <div className="wm">
-      <header className="wm-head">
-        <p className="wm-eyebrow">
-          Work Map · {expert} · session {map.session_id}
-        </p>
+      <header className="wm-hero">
+        <p className="wm-eyebrow">Work Map · session {map.session_id}</p>
         <h1>{map.title}</h1>
-        {map.confirmed_at ? (
-          <p className="wm-confirmed">Confirmed by {expert}, {formatConfirmed(map.confirmed_at)}</p>
-        ) : (
-          <p className="wm-draft">Draft. {expert} has not confirmed the teach-back yet.</p>
-        )}
+        <p className="wm-sub">
+          {map.confirmed_at
+            ? `Learned from ${expert}. Confirmed by ${expert} on ${formatConfirmed(map.confirmed_at)}.`
+            : `Learned from ${expert}. Draft: ${expert} has not confirmed the teach-back yet.`}
+        </p>
         <dl className="wm-counts">
           <div>
-            <dt>Steps</dt>
+            <dt>steps</dt>
             <dd>{map.steps.length}</dd>
           </div>
-          <div className="judgment">
-            <dt>Judgment calls</dt>
+          <div>
+            <dt>judgment calls</dt>
             <dd>{judgmentCalls}</dd>
           </div>
-          <div className="guardrail">
-            <dt>Guardrails</dt>
+          <div>
+            <dt>guardrails</dt>
             <dd>{map.guardrails.length}</dd>
           </div>
         </dl>
       </header>
 
       {map.guardrails.length > 0 && (
-        <section className="wm-guardrails" aria-labelledby="wm-guardrails-title">
+        <section aria-labelledby="wm-guardrails-title">
           <div className="wm-section-head">
             <h2 id="wm-guardrails-title">Guardrails</h2>
-            <span>{selected ? 'Highlighted steps follow this rule. Select it again to clear.' : 'Select one to see the steps it governs.'}</span>
+            <p>
+              {selected
+                ? 'The highlighted steps follow this rule. Select it again to clear.'
+                : `The rules ${expert} applies. Select one to see the steps it governs.`}
+            </p>
           </div>
           <div className="wm-guardrail-list">
             {map.guardrails.map((g) => (
-              <article key={g.id} className={`wm-guardrail ${g.kind}`} aria-current={selected === g.id}>
+              <article key={g.id} className="wm-tile wm-guardrail" aria-current={selected === g.id}>
                 <button type="button" className="wm-guardrail-main" aria-pressed={selected === g.id} onClick={() => toggle(g.id)}>
                   <span className={`wm-kind ${g.kind}`}>{kindLabel[g.kind]}</span>
                   <span className="wm-guardrail-statement">{g.statement}</span>
@@ -106,7 +112,7 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
                     {g.reason.speaker}, {sourceLabel[g.reason.source]}
                   </span>
                 </p>
-                <button type="button" className="wm-moment" onClick={() => show(g.frame_ts, g.statement)}>
+                <button type="button" className="link more wm-moment" onClick={() => show(g.frame_ts, g.statement)}>
                   Screen moment {formatTs(g.frame_ts)}
                 </button>
               </article>
@@ -118,6 +124,7 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
       <section aria-labelledby="wm-steps-title">
         <div className="wm-section-head">
           <h2 id="wm-steps-title">Steps</h2>
+          <p>What {expert} did, in order, and why.</p>
         </div>
         <ol className={`wm-steps ${selected ? 'filtering' : ''}`}>
           {map.steps.map((step) => {
@@ -130,13 +137,15 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
                 className={`wm-step ${step.is_judgment_call ? 'judgment' : ''} ${lit ? 'lit' : ''}`}
               >
                 <div className="wm-rail" aria-hidden="true">
-                  <span className="wm-num">{step.index}</span>
+                  <span className="wm-dot" />
                 </div>
-                <div className="wm-card">
-                  <div className="wm-step-top">
-                    <time>{formatTs(step.frame_ts)}</time>
-                    {step.is_judgment_call && <span className="wm-tag judgment">Judgment call</span>}
-                  </div>
+                <div className="wm-tile wm-card">
+                  <p className="wm-step-eyebrow">
+                    <span>
+                      Step {step.index} · {formatTs(step.frame_ts)}
+                    </span>
+                    {step.is_judgment_call && <span className="wm-flag">Judgment call</span>}
+                  </p>
                   <h3>{step.title}</h3>
                   <div className="wm-step-body">
                     <button
@@ -148,16 +157,17 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
                       <img src={frameUrl(sessionId, step.frame_ts)} alt="" loading="lazy" />
                     </button>
                     <div className="wm-step-text">
-                      <p className="wm-decision">
-                        <span>Decision</span>
-                        {step.decision}
-                      </p>
+                      <div>
+                        <p className="wm-label">Decision</p>
+                        <p className="wm-decision">{step.decision}</p>
+                      </div>
                       <blockquote className="wm-quote">
                         <p>“{step.reason.text}”</p>
                         <footer>
                           {step.reason.speaker},{' '}
                           <button
                             type="button"
+                            className="link more"
                             onClick={() =>
                               show(quoteMoment(step.reason, step.frame_ts), `“${step.reason.text}” ${step.reason.speaker}`)
                             }
@@ -172,7 +182,7 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
                             <li key={g.id}>
                               <button type="button" aria-pressed={selected === g.id} onClick={() => toggle(g.id)}>
                                 <span className={`wm-kind ${g.kind}`}>{kindLabel[g.kind]}</span>
-                                {g.statement}
+                                <span>{g.statement}</span>
                               </button>
                             </li>
                           ))}
@@ -188,7 +198,7 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
       </section>
 
       {map.open_questions.length > 0 && (
-        <section className="wm-open" aria-labelledby="wm-open-title">
+        <section className="wm-tile wm-open" aria-labelledby="wm-open-title">
           <h2 id="wm-open-title">Still unclear</h2>
           <ul>
             {map.open_questions.map((q) => (

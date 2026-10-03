@@ -29,7 +29,7 @@ export function FrameViewer({ moment, onClose }: { moment: FrameMoment; onClose:
         <figcaption>
           <time>{formatTs(moment.ts)}</time>
           <span>{moment.caption}</span>
-          <button type="button" onClick={onClose}>
+          <button type="button" className="button secondary small" onClick={onClose}>
             Close
           </button>
         </figcaption>

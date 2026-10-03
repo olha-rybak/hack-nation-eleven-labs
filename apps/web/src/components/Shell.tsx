@@ -12,8 +12,8 @@ export function Shell() {
           <NavLink to={`/map/${DEMO_ID}`}>Work Map</NavLink>
           <NavLink to={`/teach/${DEMO_ID}`}>Teach</NavLink>
         </nav>
-        <a className="erp-link" href="/erp" target="_blank" rel="noreferrer">
-          Open ERP in a new tab
+        <a className="button small" href="/erp" target="_blank" rel="noreferrer">
+          Open ERP
         </a>
       </header>
       <Outlet />
