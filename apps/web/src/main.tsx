@@ -2,8 +2,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { Shell } from './components/Shell'
+import { ErpApp } from './erp/ErpApp'
 import { CapturePage } from './routes/CapturePage'
-import { ErpPage } from './routes/ErpPage'
 import { MapPage } from './routes/MapPage'
 import { NotFound } from './routes/NotFound'
 import { TeachPage } from './routes/TeachPage'
@@ -13,7 +13,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/erp" element={<ErpPage />} />
+        <Route path="/erp/*" element={<ErpApp />} />
         <Route element={<Shell />}>
           <Route index element={<Navigate to="/capture" replace />} />
           <Route path="capture" element={<CapturePage />} />
