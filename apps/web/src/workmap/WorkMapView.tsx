@@ -87,6 +87,21 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
               ? `Confirmed by ${expert} on ${formatConfirmed(map.confirmed_at)}.`
               : `Draft. ${expert} has not confirmed the teach-back yet.`}
           </p>
+          <dl className="wm-stats">
+            <div>
+              <dt>steps</dt>
+              <dd>{map.steps.length}</dd>
+            </div>
+            <div>
+              <dt>judgment calls</dt>
+              <dd>{judgmentCalls}</dd>
+            </div>
+            <div>
+              <dt>guardrails</dt>
+              <dd>{map.guardrails.length}</dd>
+            </div>
+          </dl>
+
           <div className="wm-ctas">
             <Link className="button" to={`/teach/${map.id}`}>
               Teach a new hire
@@ -106,20 +121,6 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
               >
                 <img src={frameUrl(sessionId, heroStep.frame_ts)} alt={`${expert}'s screen during "${heroStep.title}"`} />
               </button>
-              <dl className="wm-stats glass">
-                <div>
-                  <dt>steps</dt>
-                  <dd>{map.steps.length}</dd>
-                </div>
-                <div>
-                  <dt>judgment calls</dt>
-                  <dd>{judgmentCalls}</dd>
-                </div>
-                <div>
-                  <dt>guardrails</dt>
-                  <dd>{map.guardrails.length}</dd>
-                </div>
-              </dl>
               <figcaption>
                 Step {heroStep.index} at {formatTs(heroStep.frame_ts)}: {heroStep.title.toLowerCase()}.
               </figcaption>
@@ -163,7 +164,7 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
       <section id="wm-steps" className="wm-band" aria-labelledby="wm-steps-title">
         <div className="wm-container">
           <h2 id="wm-steps-title">Steps</h2>
-          <p className="wm-intro">What {expert} did, in order, and why. Judgment calls stand out in the inverse tone.</p>
+          <p className="wm-intro">What {expert} did, in order, and why. Judgment calls are marked.</p>
           <ol className={`wm-steps ${selected ? 'filtering' : ''}`}>
             {map.steps.map((step) => {
               const rails = map.guardrails.filter((g) => step.guardrail_ids.includes(g.id))
@@ -175,8 +176,10 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
                   className={`wm-card wm-step ${step.is_judgment_call ? 'judgment' : ''} ${lit ? 'lit' : ''}`}
                 >
                   <p className="wm-step-eyebrow">
-                    Step {step.index} · {formatTs(step.frame_ts)}
-                    {step.is_judgment_call && <strong> · Judgment call</strong>}
+                    <span>
+                      Step {step.index} · {formatTs(step.frame_ts)}
+                    </span>
+                    {step.is_judgment_call && <span className="wm-flag">Judgment call</span>}
                   </p>
                   <h3>{step.title}</h3>
                   <div className="wm-step-body">
