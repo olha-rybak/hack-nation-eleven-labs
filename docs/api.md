@@ -5,7 +5,7 @@ Run from `apps/server`: `uvicorn apprentice.main:app --port 8001`.
 The vision model runs separately in llama-server on `:8080`; see `.env.example`.
 
 ## Health
-`GET /health` → `{"server": "ok", "model": "ok" | "down"}`
+`GET /health` → `{"server": "ok", "model": "ok" | "down", "presidio": "on" | "text-only" | "off"}` (`text-only`: Tesseract missing, frames are stored unmasked)
 
 ## Sessions
 - `POST /sessions` body `{"session_id"?: str, "role"?: "interviewer"|"tutor"}` → `{"session_id"}`.

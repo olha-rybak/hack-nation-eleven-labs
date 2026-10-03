@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     MAP_LLM_MODEL: str = "claude-opus-5-5"
     MAP_LLM_EFFORT: Literal["low", "medium", "high", "xhigh", "max"] = "high"
     MAP_LLM_TIMEOUT_SEC: float = 300
+    PRESIDIO_ENABLED: bool = True
+    PRESIDIO_SPACY_MODEL: str = "en_core_web_lg"
+    PRESIDIO_ENTITIES: str = "PERSON,EMAIL_ADDRESS,IBAN_CODE,PHONE_NUMBER,LOCATION"
+    PRESIDIO_SCORE_THRESHOLD: float = 0.4
+    PRESIDIO_PHONE_REGIONS: str = "AT,DE,CZ,GB,US"
+    TESSERACT_CMD: str = ""
 
 
 @lru_cache

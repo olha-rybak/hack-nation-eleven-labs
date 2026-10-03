@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 
@@ -14,11 +16,15 @@ async def ingest_frame(
     session_id: str = Query(pattern=SESSION_ID),
     frame_ts: int = Query(ge=0, description="ms since session start, monotonic"),
 ) -> dict:
-    """Raw JPEG/PNG body = a changed frame. Empty body = frame existed but was unchanged."""
-    store, vision, pause = (
+    """Raw JPEG/PNG body = a changed frame. Empty body = frame existed but was unchanged.
+
+    The stored copy is PII-masked; the vision model gets the original, it has to read the screen.
+    """
+    store, vision, pause, redactor = (
         request.app.state.store,
         request.app.state.vision,
         request.app.state.pause,
+        request.app.state.redactor,
     )
     if not store.exists(session_id):
         store.create(session_id)
@@ -30,7 +36,8 @@ async def ingest_frame(
     if not (image.startswith(b"\xff\xd8") or image.startswith(b"\x89PNG")):
         raise HTTPException(415, "body must be a JPEG or PNG image")
     det.on_screen_change(pause.clock())
-    ref = store.save_frame(session_id, frame_ts, image)
+    stored = await asyncio.to_thread(redactor.image, session_id, image)
+    ref = store.save_frame(session_id, frame_ts, stored)
     vision.submit(session_id, Frame(frame_ts, ref, image))
     return {"frame_ref": ref}
 

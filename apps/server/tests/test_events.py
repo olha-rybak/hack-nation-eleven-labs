@@ -20,7 +20,9 @@ def api(tmp_path):
         app.state.store = SessionStore(tmp_path)
         settings = Settings()
         app.state.pause = PauseService(app.state.store, app.state.hub, settings)
-        app.state.vision = VisionService(app.state.llm, app.state.store, app.state.hub, settings)
+        app.state.vision = VisionService(
+            app.state.llm, app.state.store, app.state.hub, settings, app.state.redactor
+        )
         yield client
 
 

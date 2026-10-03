@@ -31,7 +31,9 @@ def wired_client(tmp_path, handler) -> tuple[TestClient, list]:
     app.state.pause.stop_all()
     app.state.store = SessionStore(tmp_path)
     app.state.pause = PauseService(app.state.store, app.state.hub, settings)
-    app.state.vision = VisionService(llm, app.state.store, app.state.hub, settings)
+    app.state.vision = VisionService(
+        llm, app.state.store, app.state.hub, settings, app.state.redactor
+    )
     return client, calls
 
 

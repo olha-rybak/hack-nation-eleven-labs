@@ -14,6 +14,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.6"]
+privacy = ["presidio-analyzer>=2.2", "presidio-image-redactor>=0.0.52"]
 
 [dependency-groups]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.6"]
