@@ -64,3 +64,22 @@ If the user starts speaking right after an `ask_now` arrives, drop the cue rathe
 - `POST /events` one event or a list; validated as the event shape above (an `id` is added if missing).
 - `GET /events?since=n` events from index n. A merged edit updates its earlier position in place.
 - `DELETE /events` archives the session as `live-<timestamp>` and starts empty. Nothing is deleted.
+
+## Off the record (T-105 / T-400)
+`POST /sessions/{id}/off-the-record` body optional `{"seconds": float}` (default
+`OFF_THE_RECORD_WINDOW_SEC`) → `{"from_ts_ms": 30000, "frames": 12, "events": 3, "transcript": 5,
+"deleted_event_ids": ["a1b2c3d4e5f6"], "reverted_events": [<event>, ...]}`.
+
+Deleted from disk, not flagged: frame lines and their JPEGs, event lines, transcript lines with
+`ts_ms >= from_ts_ms`, and pause-log `ask_now` entries for any event changed inside the window (their
+subject quotes the value). An event edited both before and after the cutoff reverts to its last
+version before it and is returned in `reverted_events`. The in-memory keyframe and any
+in-flight vision call for the session are dropped first.
+
+Every connected client then gets `{"type": "deleted", "data": <the result above>}`: remove transcript
+lines and frames with `ts_ms >= from_ts_ms`, events whose `id` is in `deleted_event_ids`, and replace
+each event in `reverted_events` by `id`.
+
+The window is measured on the session's clock, the latest `ts_ms` among frame ticks, transcript lines
+and events, not wall time. The browser must keep sending empty-body frame ticks while the screen is
+unchanged, or the window ends at the last activity and covers the wrong stretch.

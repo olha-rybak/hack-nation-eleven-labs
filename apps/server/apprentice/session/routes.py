@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSo
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+from apprentice import settings
 from apprentice.session.hub import Hub
 from apprentice.session.store import SessionStore
 
@@ -25,6 +26,10 @@ class TranscriptBody(BaseModel):
     speaker: str
     ts_ms: int
     text: str
+
+
+class OffTheRecordBody(BaseModel):
+    seconds: float | None = None
 
 
 def _require(store: SessionStore, session_id: str) -> None:
@@ -92,6 +97,25 @@ async def get_frame(
     if not path.is_file():
         raise HTTPException(404, "unknown frame")
     return FileResponse(path, media_type="image/jpeg")
+
+
+@router.post("/sessions/{session_id}/off-the-record")
+async def off_the_record(
+    session_id: str,
+    request: Request,
+    body: OffTheRecordBody | None = None,
+    store: SessionStore = Depends(get_store),
+    hub: Hub = Depends(get_hub),
+) -> dict:
+    _require(store, session_id)
+    seconds = body.seconds if body else None
+    if seconds is None:
+        seconds = settings.get_settings().OFF_THE_RECORD_WINDOW_SEC
+    if vision := getattr(request.app.state, "vision", None):
+        vision.reset(session_id)
+    result = store.delete_window(session_id, seconds)
+    await hub.publish(session_id, "deleted", result)
+    return result
 
 
 @router.websocket("/ws/session/{session_id}")

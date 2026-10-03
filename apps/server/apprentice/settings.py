@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     MAX_LIVE_QUESTIONS: int = 5
     SESSIONS_DIR: str = "data/sessions"
     PAUSE_TICK_SEC: float = 0.25
+    OFF_THE_RECORD_WINDOW_SEC: float = 30
     EVENT_MIN_CONFIDENCE: float = 0.6
     VISION_MAX_TOKENS: int = 512
     VISION_THINKING: bool = False

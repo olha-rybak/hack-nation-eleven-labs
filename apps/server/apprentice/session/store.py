@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import threading
 import uuid
@@ -6,6 +7,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 _ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+def _at_or_after(entry: dict, cutoff_ms: int) -> bool:
+    ts = entry.get("ts_ms")
+    return isinstance(ts, int) and ts >= cutoff_ms
 
 
 class SessionStore:
@@ -131,4 +137,99 @@ class SessionStore:
             d.rename(self._dir(new_id))
         return new_id
 
-    # TODO(T-400): delete_window
+    def delete_window(self, session_id: str, seconds: float) -> dict:
+        """Remove everything in the last `seconds` of the session's own clock, from disk.
+
+        The only place that deletes session data (T-400 off the record).
+        """
+        d = self._existing_dir(session_id)
+        with self._lock(session_id):
+            files = {
+                name: self._load(d / f"{name}.jsonl")
+                for name in ("frames", "events", "transcript", "pause")
+            }
+            stamps = [
+                e["ts_ms"]
+                for name in ("frames", "events", "transcript")
+                for e in files[name]
+                if isinstance(e.get("ts_ms"), int)
+            ]
+            if not stamps:
+                return {
+                    "from_ts_ms": 0,
+                    "frames": 0,
+                    "events": 0,
+                    "transcript": 0,
+                    "deleted_event_ids": [],
+                    "reverted_events": [],
+                }
+            cutoff = max(stamps) - int(seconds * 1000)
+
+            def keep(entries: list[dict]) -> list[dict]:
+                return [e for e in entries if not _at_or_after(e, cutoff)]
+
+            frames = keep(files["frames"])
+            events = keep(files["events"])
+            transcript = keep(files["transcript"])
+            surviving = {e.get("id") for e in events}
+            touched = list(
+                dict.fromkeys(e.get("id") for e in files["events"] if _at_or_after(e, cutoff))
+            )
+            deleted_ids = [i for i in touched if i not in surviving]
+            # an ask_now subject quotes the event as it was then, possibly an off-the-record value
+            pause = [
+                e for e in files["pause"] if (e.get("ask_now") or {}).get("event_id") not in touched
+            ]
+            folded = {e.get("id"): e for e in events}
+            reverted = [folded[i] for i in touched if i in surviving]
+
+            for e in files["frames"]:
+                if _at_or_after(e, cutoff) and e.get("frame_ref"):
+                    self.frame_path(session_id, e["frame_ref"]).unlink(missing_ok=True)
+            for jpg in (d / "frames").glob("*.jpg"):
+                if jpg.stem.isdigit() and int(jpg.stem) >= cutoff:
+                    jpg.unlink(missing_ok=True)
+
+            for name, entries in (
+                ("frames", frames),
+                ("events", events),
+                ("transcript", transcript),
+                ("pause", pause),
+            ):
+                self._rewrite(d / f"{name}.jsonl", entries)
+
+        return {
+            "from_ts_ms": cutoff,
+            "frames": len(files["frames"]) - len(frames),
+            "events": len(files["events"]) - len(events),
+            "transcript": len(files["transcript"]) - len(transcript),
+            "deleted_event_ids": deleted_ids,
+            "reverted_events": reverted,
+        }
+
+    @staticmethod
+    def _load(path: Path) -> list[dict]:
+        if not path.exists():
+            return []
+        out = []
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    obj = json.loads(line)
+                except ValueError:
+                    continue
+                if isinstance(obj, dict):
+                    out.append(obj)
+        return out
+
+    @staticmethod
+    def _rewrite(path: Path, entries: list[dict]) -> None:
+        if not path.exists():
+            return
+        tmp = path.with_name(path.name + ".tmp")
+        with open(tmp, "w", encoding="utf-8") as f:
+            for e in entries:
+                f.write(json.dumps(e, ensure_ascii=False) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
