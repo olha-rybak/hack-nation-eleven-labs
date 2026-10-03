@@ -17,9 +17,11 @@ from apprentice.capture.routes import router as capture_router
 from apprentice.capture.vision import VisionService
 from apprentice.interviewer import router as interviewer_router
 from apprentice.llm.client import LlmClient
+from apprentice.llm.structured import StructuredLlm
 from apprentice.session.hub import Hub
 from apprentice.session.routes import router as session_router
 from apprentice.session.store import SessionStore
+from apprentice.workmap.routes import router as workmap_router
 
 HERE = Path(__file__).parent
 
@@ -39,7 +41,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         pause.detector(session_id).on_screen_change(pause.clock())
 
     app.state.vision = VisionService(app.state.llm, app.state.store, app.state.hub, s, event_seen)
+    app.state.map_llm = StructuredLlm(s)
     yield
+    await app.state.map_llm.aclose()
     pause.stop_all()
     await app.state.llm.aclose()
 
@@ -48,6 +52,7 @@ app = FastAPI(title="AI Apprentice", lifespan=lifespan)
 app.include_router(session_router)
 app.include_router(capture_router)
 app.include_router(interviewer_router)
+app.include_router(workmap_router)
 app.mount("/prompts", StaticFiles(directory=HERE / "prompts"), name="prompts")
 app.mount("/fixtures", StaticFiles(directory=HERE.parent / "fixtures"), name="fixtures")
 

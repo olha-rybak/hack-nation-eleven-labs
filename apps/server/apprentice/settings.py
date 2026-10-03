@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     EVENT_MIN_CONFIDENCE: float = 0.6
     VISION_MAX_TOKENS: int = 512
     VISION_THINKING: bool = False
+    OPENAI_API_KEY: str = ""
+    MAP_LLM_BASE_URL: str = ""
+    MAP_LLM_MODEL: str = "gpt-5-mini"
+    MAP_LLM_TIMEOUT_SEC: float = 180
 
 
 @lru_cache
