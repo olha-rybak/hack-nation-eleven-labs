@@ -1,5 +1,5 @@
 # T-204 · Teach-back and confirmation
-**Lane C · depends on: T-203**
+**Lane C · owner: Olha · depends on: T-203**
 
 The debrief ends by explaining the whole process back in the agent's own words, in **under a minute**,
 and the expert confirms or corrects it. This is the moment that proves understanding, so it has to be a

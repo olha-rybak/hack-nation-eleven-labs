@@ -1,5 +1,5 @@
 # T-302 · ElevenAgents tutor — teaching voice
-**Lane C · depends on: T-300, T-106**
+**Lane C · owner: Olha · depends on: T-300, T-106**
 
 The second agent, same proxy, different role. It has three modes and must pick between them without
 being told:

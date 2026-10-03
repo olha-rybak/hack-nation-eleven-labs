@@ -32,7 +32,7 @@ const BUDGET = Number(import.meta.env.VITE_MAX_LIVE_QUESTIONS) || 5
 export interface MockSession {
   close(): void
   correct(id: string, patch: EventCorrection): ScreenEvent | null
-  offRecord(untilTs: number, windowMs: number): OffRecordRemoved
+  offRecord(seconds: number): OffRecordRemoved
 }
 
 export function openMockSession(emit: (msg: FeedMessage) => void): MockSession {
@@ -68,19 +68,19 @@ export function openMockSession(emit: (msg: FeedMessage) => void): MockSession {
       emit({ type: 'event', data: events[i] })
       return events[i]
     },
-    offRecord(untilTs, windowMs) {
-      const from = Math.max(0, untilTs - windowMs)
-      const gone = events.filter((e) => e.ts_ms >= from && e.ts_ms <= untilTs)
+    offRecord(seconds) {
+      const from = Math.max(0, now() - seconds * 1000)
+      const gone = events.filter((e) => e.ts_ms >= from)
       for (const e of gone) events.splice(events.indexOf(e), 1)
       const removed: OffRecordRemoved = {
-        from_ts: from,
-        until_ts: untilTs,
+        from_ts_ms: from,
         frames: 0,
         events: gone.length,
         transcript: 0,
-        event_ids: gone.map((e) => e.id),
+        deleted_event_ids: gone.map((e) => e.id),
+        reverted_events: [],
       }
-      emit({ type: 'off_record', data: removed })
+      emit({ type: 'deleted', data: removed })
       return removed
     },
   }

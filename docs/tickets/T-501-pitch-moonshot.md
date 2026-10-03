@@ -1,5 +1,5 @@
 # T-501 · Pitch + moonshot slide
-**Lane C · depends on: T-500**
+**Lane C · owner: Olha · depends on: T-500**
 
 The brief asks the pitch to end on one moonshot slide: what you would build next and **how today's MVP
 gets you there**. The weak-submission column names "a demo that stops at the demo", so the path matters

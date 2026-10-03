@@ -9,6 +9,11 @@ from pathlib import Path
 _ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
+def _at_or_after(entry: dict, cutoff_ms: int) -> bool:
+    ts = entry.get("ts_ms")
+    return isinstance(ts, int) and ts >= cutoff_ms
+
+
 class SessionStore:
     """Append-only on-disk session log. All state lives on disk."""
 
@@ -48,6 +53,9 @@ class SessionStore:
                 meta.write_text(json.dumps(data), encoding="utf-8")
         return sid
 
+    def session_dir(self, session_id: str) -> Path:
+        return self._existing_dir(session_id)
+
     def exists(self, session_id: str) -> bool:
         return (self._dir(session_id) / "meta.json").is_file()
 
@@ -78,10 +86,7 @@ class SessionStore:
                     out.append(obj)
         return out
 
-    def save_frame(self, session_id: str, ts_ms: int, image: bytes) -> str | None:
-        """Returns None, writing nothing, when ts_ms falls in an off-the-record window."""
-        if self.is_off_record(session_id, ts_ms):
-            return None
+    def save_frame(self, session_id: str, ts_ms: int, image: bytes) -> str:
         d = self._existing_dir(session_id)
         ref = f"frames/{ts_ms:010d}.jpg"
         with self._lock(session_id):
@@ -93,8 +98,6 @@ class SessionStore:
         return ref
 
     def record_tick(self, session_id: str, ts_ms: int) -> None:
-        if self.is_off_record(session_id, ts_ms):
-            return
         self._append(session_id, "frames.jsonl", {"ts_ms": ts_ms, "frame_ref": None})
 
     def frames(self, session_id: str) -> list[dict]:
@@ -107,12 +110,8 @@ class SessionStore:
             raise ValueError(f"invalid frame ref: {frame_ref!r}")
         return p
 
-    def append_event(self, session_id: str, event: dict) -> bool:
-        """False when the event falls in an off-the-record window (a late vision result)."""
-        if self.is_off_record(session_id, event.get("ts_ms")):
-            return False
+    def append_event(self, session_id: str, event: dict) -> None:
         self._append(session_id, "events.jsonl", event)
-        return True
 
     def events(self, session_id: str) -> list[dict]:
         folded: dict = {}
@@ -120,11 +119,8 @@ class SessionStore:
             folded[ev.get("id")] = ev  # dict keeps first-insertion position
         return list(folded.values())
 
-    def append_transcript(self, session_id: str, line: dict) -> bool:
-        if self.is_off_record(session_id, line.get("ts_ms")):
-            return False
+    def append_transcript(self, session_id: str, line: dict) -> None:
         self._append(session_id, "transcript.jsonl", line)
-        return True
 
     def transcript(self, session_id: str) -> list[dict]:
         return self._read(session_id, "transcript.jsonl")
@@ -144,66 +140,81 @@ class SessionStore:
             d.rename(self._dir(new_id))
         return new_id
 
-    def off_record_windows(self, session_id: str) -> list[dict]:
-        return self._read(session_id, "off_record.jsonl")
+    def delete_window(self, session_id: str, seconds: float) -> dict:
+        """Remove everything in the last `seconds` of the session's own clock, from disk.
 
-    def is_off_record(self, session_id: str, ts_ms: int | None) -> bool:
-        if ts_ms is None:
-            return False
-        windows = self.off_record_windows(session_id)
-        return any(w["from_ts"] <= ts_ms <= w["until_ts"] for w in windows)
-
-    def delete_window(self, session_id: str, until_ts: int, window_ms: int) -> dict:
-        """Off the record: delete frames, events and transcript lines with
-        until_ts - window_ms <= ts_ms <= until_ts, from disk, not just from view.
-
-        The window is remembered (numbers only, no content) so that a frame or vision result
-        still in flight when the expert asked is dropped when it lands. This is the one place
-        in the codebase allowed to remove session data.
+        The only place that deletes session data (T-400 off the record).
         """
         d = self._existing_dir(session_id)
-        from_ts = max(0, until_ts - window_ms)
-
-        def inside(obj: dict) -> bool:
-            ts = obj.get("ts_ms")
-            return isinstance(ts, int) and from_ts <= ts <= until_ts
-
-        self._append(session_id, "off_record.jsonl", {"from_ts": from_ts, "until_ts": until_ts})
         with self._lock(session_id):
-            frames, gone_frames = self._partition(d / "frames.jsonl", inside)
-            events, gone_events = self._partition(d / "events.jsonl", inside)
-            lines, gone_lines = self._partition(d / "transcript.jsonl", inside)
-            event_ids = {e.get("id") for e in gone_events} - {None}
+            files = {
+                name: self._load(d / f"{name}.jsonl")
+                for name in ("frames", "events", "transcript", "pause")
+            }
+            stamps = [
+                e["ts_ms"]
+                for name in ("frames", "events", "transcript")
+                for e in files[name]
+                if isinstance(e.get("ts_ms"), int)
+            ]
+            if not stamps:
+                return {
+                    "from_ts_ms": 0,
+                    "frames": 0,
+                    "events": 0,
+                    "transcript": 0,
+                    "deleted_event_ids": [],
+                    "reverted_events": [],
+                }
+            cutoff = max(stamps) - int(seconds * 1000)
 
-            def about_deleted(entry: dict) -> bool:
-                return (entry.get("ask_now") or {}).get("event_id") in event_ids
+            def keep(entries: list[dict]) -> list[dict]:
+                return [e for e in entries if not _at_or_after(e, cutoff)]
 
-            pause, _ = self._partition(d / "pause.jsonl", about_deleted)
-            for path, rows in (
-                (d / "frames.jsonl", frames),
-                (d / "events.jsonl", events),
-                (d / "transcript.jsonl", lines),
-                (d / "pause.jsonl", pause),
+            frames = keep(files["frames"])
+            events = keep(files["events"])
+            transcript = keep(files["transcript"])
+            surviving = {e.get("id") for e in events}
+            touched = list(
+                dict.fromkeys(e.get("id") for e in files["events"] if _at_or_after(e, cutoff))
+            )
+            deleted_ids = [i for i in touched if i not in surviving]
+            # an ask_now subject quotes the event as it was then, possibly an off-the-record value
+            pause = [
+                e for e in files["pause"] if (e.get("ask_now") or {}).get("event_id") not in touched
+            ]
+            folded = {e.get("id"): e for e in events}
+            reverted = [folded[i] for i in touched if i in surviving]
+
+            for e in files["frames"]:
+                if _at_or_after(e, cutoff) and e.get("frame_ref"):
+                    self.frame_path(session_id, e["frame_ref"]).unlink(missing_ok=True)
+            for jpg in (d / "frames").glob("*.jpg"):
+                if jpg.stem.isdigit() and int(jpg.stem) >= cutoff:
+                    jpg.unlink(missing_ok=True)
+
+            for name, entries in (
+                ("frames", frames),
+                ("events", events),
+                ("transcript", transcript),
+                ("pause", pause),
             ):
-                self._rewrite(path, rows)
-            for f in gone_frames:
-                if f.get("frame_ref"):
-                    (d / f["frame_ref"]).unlink(missing_ok=True)
+                self._rewrite(d / f"{name}.jsonl", entries)
+
         return {
-            "from_ts": from_ts,
-            "until_ts": until_ts,
-            "frames": len(gone_frames),
-            "events": len(event_ids),
-            "transcript": len(gone_lines),
-            "event_ids": sorted(event_ids),
+            "from_ts_ms": cutoff,
+            "frames": len(files["frames"]) - len(frames),
+            "events": len(files["events"]) - len(events),
+            "transcript": len(files["transcript"]) - len(transcript),
+            "deleted_event_ids": deleted_ids,
+            "reverted_events": reverted,
         }
 
     @staticmethod
-    def _partition(path: Path, predicate) -> tuple[list[dict], list[dict]]:
-        kept: list[dict] = []
-        gone: list[dict] = []
+    def _load(path: Path) -> list[dict]:
         if not path.exists():
-            return kept, gone
+            return []
+        out = []
         with open(path, encoding="utf-8") as f:
             for line in f:
                 try:
@@ -211,17 +222,17 @@ class SessionStore:
                 except ValueError:
                     continue
                 if isinstance(obj, dict):
-                    (gone if predicate(obj) else kept).append(obj)
-        return kept, gone
+                    out.append(obj)
+        return out
 
     @staticmethod
-    def _rewrite(path: Path, rows: list[dict]) -> None:
-        if not path.exists() and not rows:
+    def _rewrite(path: Path, entries: list[dict]) -> None:
+        if not path.exists():
             return
-        tmp = path.with_suffix(path.suffix + ".tmp")
+        tmp = path.with_name(path.name + ".tmp")
         with open(tmp, "w", encoding="utf-8") as f:
-            for row in rows:
-                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+            for e in entries:
+                f.write(json.dumps(e, ensure_ascii=False) + "\n")
             f.flush()
             os.fsync(f.fileno())
         os.replace(tmp, path)

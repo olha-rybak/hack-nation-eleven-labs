@@ -77,8 +77,8 @@ class VisionService:
                 continue  # keep the old keyframe so the next diff still covers this change
             st.keyframe = cur
             for ev in events:
-                if self.store.append_event(session_id, ev.model_dump()):
-                    await self.hub.publish(session_id, "event", ev.model_dump())
+                self.store.append_event(session_id, ev.model_dump())
+                await self.hub.publish(session_id, "event", ev.model_dump())
             if events and self.on_event:
                 self.on_event(session_id)
 

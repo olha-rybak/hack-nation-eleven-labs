@@ -37,8 +37,8 @@ async def add_events(
     except ValidationError as e:
         raise HTTPException(422, str(e)) from None
     for ev in events:
-        if store.append_event(session, ev.model_dump()):
-            await hub.publish(session, "event", ev.model_dump())
+        store.append_event(session, ev.model_dump())
+        await hub.publish(session, "event", ev.model_dump())
     request.app.state.pause.detector(session).on_screen_change(request.app.state.pause.clock())
     return {"events": len(store.events(session))}
 

@@ -5,7 +5,7 @@ import { SessionLayout } from '../components/SessionLayout'
 import { CapturePanel } from '../session/CapturePanel'
 import { useSessionFeed } from '../session/useSessionFeed'
 
-const WINDOW_MS = (Number(import.meta.env.VITE_OFF_THE_RECORD_WINDOW_SEC) || 30) * 1000
+const WINDOW_SEC = Number(import.meta.env.VITE_OFF_THE_RECORD_WINDOW_SEC) || 30
 
 export function CapturePage() {
   const capture = useScreenCapture()
@@ -32,7 +32,7 @@ export function CapturePage() {
       correctEvent={feed.correctEvent}
       onOffTheRecord={() => {
         if (state.status !== 'live') return Promise.reject(new Error('Not recording'))
-        return feed.offTheRecord(state.capture.elapsed(), WINDOW_MS)
+        return feed.offTheRecord(WINDOW_SEC)
       }}
       onEndTask={async () => {
         if (state.status !== 'live') return

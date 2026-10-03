@@ -37,11 +37,13 @@ export interface AskCue {
   ts_ms: number
 }
 
+/** POST /sessions/:id/off-the-record result, also broadcast as {type: 'deleted'} (docs/api.md). */
 export interface OffRecordRemoved {
-  from_ts: number
-  until_ts: number
+  from_ts_ms: number
   frames: number
   events: number
   transcript: number
-  event_ids: string[]
+  deleted_event_ids: string[]
+  /** Events edited before and inside the window, reverted to their last version before it. */
+  reverted_events: ScreenEvent[]
 }

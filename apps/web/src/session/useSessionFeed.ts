@@ -24,7 +24,7 @@ export function useSessionFeed(sessionId: string | null) {
     const onMessage = (msg: FeedMessage) => {
       dispatch({ kind: 'message', msg })
       // Items in an off-the-record window fade out, then disappear.
-      if (msg.type === 'off_record') setTimeout(() => dispatch({ kind: 'sweep' }), LEAVE_MS)
+      if (msg.type === 'deleted') setTimeout(() => dispatch({ kind: 'sweep' }), LEAVE_MS)
     }
 
     if (useMock) {
@@ -56,12 +56,13 @@ export function useSessionFeed(sessionId: string | null) {
     return (await res.json()) as ScreenEvent
   }
 
-  async function offTheRecord(untilTs: number, windowMs: number): Promise<OffRecordRemoved> {
-    if (useMock) return mock.current!.offRecord(untilTs, windowMs)
+  async function offTheRecord(seconds: number): Promise<OffRecordRemoved> {
+    if (useMock) return mock.current!.offRecord(seconds)
+    // The server measures the window on the session's own clock (latest ts_ms), not ours.
     const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId!)}/off-the-record`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ until_ts: untilTs }),
+      body: JSON.stringify({ seconds }),
     })
     if (!res.ok) throw new Error(`Off the record failed (${res.status})`)
     return (await res.json()) as OffRecordRemoved

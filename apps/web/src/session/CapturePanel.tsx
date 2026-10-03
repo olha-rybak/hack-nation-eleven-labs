@@ -66,9 +66,13 @@ export function CapturePanel(props: Props) {
     setBusy('off')
     try {
       const r = await props.onOffTheRecord()
+      const n = r.deleted_event_ids.length
+      const reverted = r.reverted_events.length
       setNotice(
-        `Removed the last ${WINDOW_SEC} s: ${r.events} ${r.events === 1 ? 'event' : 'events'}, ` +
-          `${r.transcript} ${r.transcript === 1 ? 'line' : 'lines'}, ${r.frames} ${r.frames === 1 ? 'frame' : 'frames'}. Deleted from disk.`,
+        `Removed the last ${WINDOW_SEC} s: ${n} ${n === 1 ? 'event' : 'events'}, ` +
+          `${r.transcript} ${r.transcript === 1 ? 'line' : 'lines'}, ${r.frames} ${r.frames === 1 ? 'frame' : 'frames'}` +
+          (reverted ? `; ${reverted} ${reverted === 1 ? 'event' : 'events'} back to the earlier value` : '') +
+          '. Deleted from disk.',
       )
     } catch (e) {
       setNotice(`${e instanceof Error ? e.message : 'Off the record failed'}. Nothing was removed.`)

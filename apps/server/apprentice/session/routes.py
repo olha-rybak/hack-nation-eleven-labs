@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, ValidationError
 
+from apprentice import settings
 from apprentice.capture.events import Event
 from apprentice.session.hub import Hub
 from apprentice.session.store import SessionStore
-from apprentice.settings import get_settings
 
 router = APIRouter()
 
@@ -38,8 +38,8 @@ class EventCorrection(BaseModel):
     after: str | None = None
 
 
-class OffRecordBody(BaseModel):
-    until_ts: int = Field(ge=0, description="the client's current frame_ts")
+class OffTheRecordBody(BaseModel):
+    seconds: float | None = None
 
 
 def _require(store: SessionStore, session_id: str) -> None:
@@ -90,9 +90,23 @@ async def post_transcript(
 ) -> dict:
     _require(store, session_id)
     line = body.model_dump()
-    if store.append_transcript(session_id, line):
-        await hub.publish(session_id, "transcript", line)
+    store.append_transcript(session_id, line)
+    await hub.publish(session_id, "transcript", line)
     return line
+
+
+@router.get("/sessions/{session_id}/frames/{name}")
+async def get_frame(
+    session_id: str, name: str, store: SessionStore = Depends(get_store)
+) -> FileResponse:
+    _require(store, session_id)
+    try:
+        path = store.frame_path(session_id, f"frames/{name}")
+    except ValueError:
+        raise HTTPException(422, "invalid frame name") from None
+    if not path.is_file():
+        raise HTTPException(404, "unknown frame")
+    return FileResponse(path, media_type="image/jpeg")
 
 
 @router.patch("/sessions/{session_id}/events/{event_id}")
@@ -123,31 +137,20 @@ async def correct_event(
 @router.post("/sessions/{session_id}/off-the-record")
 async def off_the_record(
     session_id: str,
-    body: OffRecordBody,
     request: Request,
+    body: OffTheRecordBody | None = None,
     store: SessionStore = Depends(get_store),
     hub: Hub = Depends(get_hub),
 ) -> dict:
-    """Delete the last OFF_THE_RECORD_WINDOW_SEC of frames, events and transcript."""
     _require(store, session_id)
-    window_ms = round(get_settings().OFF_THE_RECORD_WINDOW_SEC * 1000)
-    removed = store.delete_window(session_id, body.until_ts, window_ms)
-    await hub.publish(session_id, "off_record", removed)
-    return removed
-
-
-@router.get("/sessions/{session_id}/frames/{name}")
-async def get_frame(
-    session_id: str, name: str, store: SessionStore = Depends(get_store)
-) -> FileResponse:
-    _require(store, session_id)
-    try:
-        path = store.frame_path(session_id, f"frames/{name}")
-    except ValueError:
-        raise HTTPException(422, "invalid frame name") from None
-    if not path.is_file():
-        raise HTTPException(404, "unknown frame")
-    return FileResponse(path, media_type="image/jpeg")
+    seconds = body.seconds if body else None
+    if seconds is None:
+        seconds = settings.get_settings().OFF_THE_RECORD_WINDOW_SEC
+    if vision := getattr(request.app.state, "vision", None):
+        vision.reset(session_id)
+    result = store.delete_window(session_id, seconds)
+    await hub.publish(session_id, "deleted", result)
+    return result
 
 
 @router.websocket("/ws/session/{session_id}")

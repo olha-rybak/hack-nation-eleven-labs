@@ -83,11 +83,6 @@ export class ScreenCapture {
     }
   }
 
-  /** Current position on the session timeline, in the same ms as frame_ts. */
-  elapsed(): number {
-    return Math.round(performance.now() - this.startedAt)
-  }
-
   private now(): number {
     // Monotonic ms since session start; never repeats even if two ticks land in the same ms.
     const ts = Math.max(Math.round(performance.now() - this.startedAt), this.lastTs + 1)

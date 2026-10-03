@@ -5,7 +5,7 @@ import type { AskCue, OffRecordRemoved, ScreenEvent, Speaker, TranscriptLine } f
 //   event      ScreenEvent                new or corrected (same id replaces in place)
 //   transcript {speaker, ts_ms, text}
 //   ask_now    {subject, event_id, question_index, budget}
-//   off_record OffRecordRemoved           everything in [from_ts, until_ts] was deleted
+//   deleted    OffRecordRemoved           off the record: ts_ms >= from_ts_ms is gone from disk
 
 export interface ServerLine {
   speaker: string
@@ -18,7 +18,7 @@ export type FeedMessage =
   | { type: 'event'; data: ScreenEvent }
   | { type: 'transcript'; data: ServerLine }
   | { type: 'ask_now'; data: Omit<AskCue, 'ts_ms'> }
-  | { type: 'off_record'; data: OffRecordRemoved }
+  | { type: 'deleted'; data: OffRecordRemoved }
 
 const AGENT_SPEAKERS = new Set(['agent', 'apprentice', 'interviewer', 'tutor'])
 
@@ -37,8 +37,6 @@ export interface FeedState {
 }
 
 export const emptyFeed: FeedState = { events: [], transcript: [], asks: [], leaving: new Set(), lastRemoved: null }
-
-const inWindow = (ts: number, r: OffRecordRemoved) => ts >= r.from_ts && ts <= r.until_ts
 
 export function lastTs(state: FeedState): number {
   const ev = state.events.at(-1)?.ts_ms ?? 0
@@ -65,13 +63,17 @@ export function reduce(state: FeedState, msg: FeedMessage): FeedState {
       const about = state.events.find((e) => e.id === msg.data.event_id)
       return { ...state, asks: [...state.asks, { ...msg.data, ts_ms: about?.ts_ms ?? lastTs(state) }] }
     }
-    case 'off_record': {
+    case 'deleted': {
       const r = msg.data
+      const deleted = new Set(r.deleted_event_ids)
+      const reverted = new Map(r.reverted_events.map((e) => [e.id, e]))
       const leaving = new Set(state.leaving)
-      for (const e of state.events) if (inWindow(e.ts_ms, r)) leaving.add(e.id)
-      for (const l of state.transcript) if (inWindow(l.ts_ms, r)) leaving.add(l.id)
-      for (const a of state.asks) if (r.event_ids.includes(a.event_id)) leaving.add(`ask-${a.event_id}`)
-      return { ...state, leaving, lastRemoved: r }
+      for (const e of state.events) if (deleted.has(e.id)) leaving.add(e.id)
+      for (const l of state.transcript) if (l.ts_ms >= r.from_ts_ms) leaving.add(l.id)
+      // A cue quotes the event as it was in the window, so it goes for reverted events too.
+      for (const a of state.asks) if (deleted.has(a.event_id) || reverted.has(a.event_id)) leaving.add(`ask-${a.event_id}`)
+      const events = state.events.map((e) => reverted.get(e.id) ?? e)
+      return { ...state, events, leaving, lastRemoved: r }
     }
   }
 }

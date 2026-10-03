@@ -43,13 +43,13 @@ describe('session feed', () => {
     expect(s.asks).toEqual([{ subject: 'cost center', event_id: 'a', question_index: 1, budget: 5, ts_ms: 1_000 }])
   })
 
-  it('fades out everything inside an off-the-record window, then drops it', () => {
+  it('fades out what the server deleted, then drops it', () => {
     let s = feed(ev('old', 1_000), ev('new', 40_000))
     s = reduce(s, { type: 'transcript', data: { speaker: 'expert', ts_ms: 45_000, text: 'private' } })
     s = reduce(s, { type: 'ask_now', data: { subject: 'x', event_id: 'new', question_index: 1, budget: 5 } })
     s = reduce(s, {
-      type: 'off_record',
-      data: { from_ts: 30_000, until_ts: 60_000, frames: 3, events: 1, transcript: 1, event_ids: ['new'] },
+      type: 'deleted',
+      data: { from_ts_ms: 30_000, frames: 3, events: 1, transcript: 1, deleted_event_ids: ['new'], reverted_events: [] },
     })
 
     // Still rendered, marked as leaving, so the expert sees them go.
@@ -60,6 +60,19 @@ describe('session feed', () => {
     expect(s.events.map((e) => e.id)).toEqual(['old'])
     expect(s.transcript.map((l) => l.text)).toEqual(['Why capex?'])
     expect(s.asks).toEqual([])
-    expect(s.lastRemoved?.events).toBe(1)
+    expect(s.lastRemoved?.deleted_event_ids).toEqual(['new'])
+  })
+
+  it('puts a reverted event back to its earlier value and drops its cue', () => {
+    let s = feed(ev('a', 1_000, '0400'))
+    s = reduce(s, { type: 'event', data: ev('a', 1_000, 'PRIVATE') })
+    s = reduce(s, { type: 'ask_now', data: { subject: 'x', event_id: 'a', question_index: 1, budget: 5 } })
+    s = reduce(s, {
+      type: 'deleted',
+      data: { from_ts_ms: 30_000, frames: 0, events: 1, transcript: 0, deleted_event_ids: [], reverted_events: [ev('a', 1_000, '0400')] },
+    })
+    s = sweep(s)
+    expect(s.events.map((e) => e.after)).toEqual(['0400'])
+    expect(s.asks).toEqual([])
   })
 })
