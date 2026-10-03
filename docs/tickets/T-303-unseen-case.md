@@ -1,5 +1,5 @@
 # T-303 · The unseen case + progress report
-**Lane C · depends on: T-302, T-301**
+**Lane C · owner: Olha · depends on: T-302, T-301**
 
 The Teach module's `Required` is explicit: a judge playing a new hire processes a case **the expert never
 showed**. Build it and prove the generalization.

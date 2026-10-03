@@ -1,5 +1,5 @@
 # T-203 · Debrief — closing the gaps
-**Lane C · depends on: T-201, T-107**
+**Lane C · owner: Olha · depends on: T-201, T-107**
 
 A spoken debrief that starts when the expert clicks **End task**. The agent works the ranked gap list
 from T-201 and asks the questions it still has — **at least three, none of them answered during the

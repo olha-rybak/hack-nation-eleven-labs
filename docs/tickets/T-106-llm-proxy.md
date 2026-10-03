@@ -1,5 +1,5 @@
 # T-106 · ElevenLabs custom-LLM proxy
-**Lane B · depends on: T-001, T-105**
+**Lane B · owner: Olha · depends on: T-001, T-105**
 
 `POST /agent/llm` — an OpenAI chat-completions-shaped endpoint (streaming) that ElevenAgents is pointed
 at as its custom LLM. On each call: resolve the session from the request, inject the environment brief,
