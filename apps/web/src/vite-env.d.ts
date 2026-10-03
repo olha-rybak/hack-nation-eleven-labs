@@ -5,6 +5,8 @@ interface ImportMetaEnv {
   readonly VITE_API_TARGET?: string
   readonly VITE_FRAME_FPS: string
   readonly VITE_FRAME_CHANGE_MIN_CELLS: string
+  readonly VITE_OFF_THE_RECORD_WINDOW_SEC: string
+  readonly VITE_MAX_LIVE_QUESTIONS: string
 }
 
 interface ImportMeta {

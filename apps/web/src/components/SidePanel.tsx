@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useTranscript } from '../lib/useTranscript'
+import { useSessionFeed } from '../session/useSessionFeed'
 import { formatTs } from '../lib/time'
 
 interface Props {
@@ -10,7 +10,7 @@ interface Props {
 const speakerLabel = { expert: 'Expert', agent: 'Apprentice' } as const
 
 export function SidePanel({ sessionId, title }: Props) {
-  const lines = useTranscript(sessionId)
+  const lines = useSessionFeed(sessionId).transcript
   const listRef = useRef<HTMLOListElement>(null)
 
   useEffect(() => {
