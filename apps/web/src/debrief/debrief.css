@@ -1,0 +1,35 @@
+.debrief-gaps {
+  margin: 32px 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: gap;
+}
+
+.debrief-gaps li {
+  counter-increment: gap;
+  position: relative;
+  padding: 16px 0 16px 40px;
+  border-top: 1px solid var(--hairline);
+}
+
+.debrief-gaps li::before {
+  content: counter(gap);
+  position: absolute;
+  left: 0;
+  top: 16px;
+  color: var(--muted);
+  font: 600 17px/1.47 var(--font-text);
+}
+
+.placeholder .debrief-question {
+  margin: 0;
+  color: inherit;
+  font: 600 17px/1.47 var(--font-text);
+  letter-spacing: -0.374px;
+}
+
+.placeholder .debrief-why {
+  margin: 4px 0 0;
+  font: 400 14px/1.43 var(--font-text);
+  letter-spacing: -0.224px;
+}
