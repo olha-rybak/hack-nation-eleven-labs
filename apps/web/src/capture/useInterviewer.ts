@@ -1,6 +1,7 @@
 import { Conversation, type Mode } from '@elevenlabs/client'
 import { useEffect, useRef, useState } from 'react'
 import type { OffRecordRemoved, ScreenEvent } from '../types/session'
+import { MicGate } from '../lib/micGate'
 import { AnswerPairer } from './answers'
 import { SpeechTracker } from './speech'
 
@@ -14,9 +15,12 @@ import { SpeechTracker } from './speech'
 //   environment brief  -> GET /environment/brief once connected, sendContextualUpdate ("About this application:")
 //   off_the_record     -> client tool calling the same feed.offTheRecord as the panel button
 //   paused             -> mic muted, no transcript/answers/VAD posts (nothing from voice while paused)
+//   mic                -> muted except after the agent asks a question, until the expert answers or
+//                         ANSWER_WINDOW_SEC pass without their voice (MicGate), so noise never reaches it
 
 const VAD_THRESHOLD = Number(import.meta.env.VITE_VAD_SPEECH_THRESHOLD) || 0.5
 const VAD_RELEASE_MS = Number(import.meta.env.VITE_VAD_RELEASE_MS) || 400
+const ANSWER_WINDOW_MS = (Number(import.meta.env.VITE_ANSWER_WINDOW_SEC) || 20) * 1000
 
 export type InterviewerStatus = 'off' | 'connecting' | 'listening' | 'speaking' | 'error'
 
@@ -75,7 +79,9 @@ export function useInterviewer(
 ) {
   const [status, setStatus] = useState<InterviewerStatus>('off')
   const [error, setError] = useState<string | null>(null)
+  const [micOpen, setMicOpen] = useState(false)
   const conversationRef = useRef<Conversation | null>(null)
+  const applyMicRef = useRef<() => void>(() => {})
   const pausedRef = useRef(Boolean(opts.paused))
   const onOffTheRecordRef = useRef(opts.onOffTheRecord)
 
@@ -99,7 +105,21 @@ export function useInterviewer(
       if (pausedRef.current) return
       if (speaking !== null) post(`/sessions/${sid}/signals`, { user_speaking: speaking })
     }
-    const release = setInterval(() => userSpeaking(speech.expire(performance.now())), 200)
+    const gate = new MicGate(ANSWER_WINDOW_MS)
+    let mic: boolean | null = null
+    const applyMic = () => {
+      const open = !pausedRef.current && gate.open(performance.now())
+      if (!conversation || open === mic) return
+      mic = open
+      conversation.setMicMuted(!open)
+      setMicOpen(open)
+      if (!open) post(`/sessions/${sid}/signals`, { user_speaking: false })
+    }
+    applyMicRef.current = applyMic
+    const release = setInterval(() => {
+      userSpeaking(speech.expire(performance.now()))
+      applyMic()
+    }, 200)
 
     const forward = (e: ScreenEvent) => {
       if (sentEvents.has(e.id)) return
@@ -165,13 +185,19 @@ export function useInterviewer(
           onModeChange: ({ mode }: { mode: Mode }) => {
             setStatus(mode)
             post(`/sessions/${sid}/signals`, { agent_speaking: mode === 'speaking' })
+            gate.agentMode(mode === 'speaking', performance.now())
+            applyMic()
           },
           onVadScore: ({ vadScore }: { vadScore: number }) => {
             if (pausedRef.current) return
+            if (vadScore >= VAD_THRESHOLD) gate.voice(performance.now())
             userSpeaking(speech.score(vadScore, performance.now()))
           },
           onMessage: ({ message, role }) => {
             if (pausedRef.current) return
+            if (role === 'agent' && message.trim().endsWith('?')) gate.question(performance.now())
+            else gate.close()
+            applyMic()
             const speaker = role === 'agent' ? 'agent' : 'expert'
             post(`/sessions/${sid}/transcript`, { speaker, text: message, ts_ms: Math.round(performance.now() - startedAt!) })
             if (role === 'agent') pairer.agent(message)
@@ -197,10 +223,7 @@ export function useInterviewer(
         }
         conversation = conv
         conversationRef.current = conv
-        if (pausedRef.current) {
-          conv.setMicMuted(true)
-          post(`/sessions/${sid}/signals`, { user_speaking: false })
-        }
+        applyMic() // muted until the first question
         setStatus('listening')
         void sendBrief()
 
@@ -231,24 +254,17 @@ export function useInterviewer(
       clearInterval(release)
       socket?.close()
       conversationRef.current = null
+      applyMicRef.current = () => {}
+      setMicOpen(false)
       void conversation?.endSession()
       setStatus('off')
     }
   }, [sessionId, startedAt])
 
-  // Mute/unmute when pause toggles; does not reconnect the conversation.
-  useEffect(() => {
-    const conv = conversationRef.current
-    if (!conv || !sessionId) return
-    if (opts.paused) {
-      conv.setMicMuted(true)
-      post(`/sessions/${encodeURIComponent(sessionId)}/signals`, { user_speaking: false })
-    } else {
-      conv.setMicMuted(false)
-    }
-  }, [opts.paused, sessionId])
+  // Pausing mutes at once; unpausing reopens the mic only if a question is still waiting.
+  useEffect(() => applyMicRef.current(), [opts.paused])
 
   const connected = status === 'listening' || status === 'speaking'
   const muted = Boolean(opts.paused) && connected
-  return { status, error, muted }
+  return { status, error, muted, micOpen: micOpen && connected }
 }

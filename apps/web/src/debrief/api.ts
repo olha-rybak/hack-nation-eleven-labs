@@ -45,11 +45,10 @@ export async function fetchDebrief(sessionId: string, signal?: AbortSignal): Pro
   return (await res.json()) as DebriefStatus
 }
 
-export async function finishDebrief(sessionId: string): Promise<{ workmap: WorkMap; left_out: string[] }> {
+/** Null when nothing was explained (409): the debrief closes without a Work Map. */
+export async function finishDebrief(sessionId: string): Promise<{ workmap: WorkMap; left_out: string[] } | null> {
   const res = await fetch(`${session(sessionId)}/debrief/finish`, { method: 'POST' })
-  if (res.status === 409) {
-    throw new Error('Answer at least one question first. The Work Map only keeps steps explained in your own words')
-  }
+  if (res.status === 409) return null
   if (!res.ok) throw new Error(`Finishing the debrief failed (${await detail(res)})`)
   return (await res.json()) as { workmap: WorkMap; left_out: string[] }
 }

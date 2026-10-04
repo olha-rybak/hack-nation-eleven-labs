@@ -17,6 +17,7 @@ Event kinds:
 
 Rules:
 - entity names the business object with its identifier as shown on screen, e.g. "invoice 4471".
+- Never translate: labels, values and entity names stay in the language shown on screen.
 - field uses the label exactly as shown on screen. before/after are the exact visible values; use null
   for an empty field.
 - Ignore mouse movement, hover effects, focus outlines, cursor blinking, scrolling, and partial typing

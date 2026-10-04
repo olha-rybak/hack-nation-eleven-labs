@@ -4,7 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { Shell } from './components/Shell'
 import { CapturePage } from './routes/CapturePage'
 import { DebriefPage } from './routes/DebriefPage'
-import { MapPage } from './routes/MapPage'
+import { MapRedirect } from './routes/MapRedirect'
 import { NotFound } from './routes/NotFound'
 import { RulesPage } from './routes/RulesPage'
 import { TeachPage } from './routes/TeachPage'
@@ -22,7 +22,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="capture" element={<CapturePage />} />
           <Route path="debrief/:sessionId" element={<DebriefPage />} />
           <Route path="rules/:sessionId" element={<RulesPage />} />
-          <Route path="map/:sessionId" element={<MapPage />} />
+          <Route path="map/:sessionId" element={<MapRedirect />} />
           <Route path="teach/:workMapId" element={<TeachPage />} />
           <Route path="vault/:sessionId" element={<VaultPage />} />
           <Route path="*" element={<NotFound />} />
