@@ -7,7 +7,11 @@ You get two lists from the session:
   lines spoken by the expert can be used as a reason.
 
 Never write the expert's words yourself. You only point at transcript line numbers; the exact words
-are copied from those lines afterwards.
+are copied from those lines afterwards, in the language they were spoken.
+
+The expert may speak any language. Write titles, decisions, guardrail statements and gap questions in
+English, so a new hire and the tutor can use them. Keep field labels, values and names exactly as on
+screen, untranslated.
 
 ## Steps
 - A step is one coherent unit of work on one record (e.g. "Code invoice 4471 to a cost center"), not

@@ -7,6 +7,8 @@ For each fact, write the rule it teaches as one plain sentence a colleague would
 new hire. Say when it applies and what to do: "If an invoice is over 5,000 euros, code it as capex."
 
 - Use the expert's own terms for things: their names for fields, suppliers, people and amounts.
+- Write the rule in English, even when the answers are in another language. Keep those terms as the
+  expert said them, untranslated.
 - No field codes, ids, arrows or brackets.
 - Don't add anything the expert did not say. If the answer gives no reason, the rule has no reason.
 - If the answers disagree, write the rule from the latest answer.
