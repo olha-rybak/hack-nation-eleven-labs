@@ -32,6 +32,9 @@ FIELD_VARS = {
     "new supplier": "is_new_supplier", "new vendor": "is_new_supplier",
     "vendor no.": "vendor_no", "vendor no": "vendor_no", "vendor number": "vendor_no",
     "group company": "group_company",
+    "price paid": "amount", "price": "amount",
+    "reason": "reason", "packaging": "packaging", "resolution": "resolution",
+    "orders (12 months)": "orders_12m", "returns (12 months)": "returns_12m",
 }  # fmt: skip
 
 MONTHS = {
@@ -108,7 +111,7 @@ def to_var(label: str, value: str | None) -> tuple[str, Any] | None:
         return None
     value = (value or "").strip()
     match var:
-        case "amount":
+        case "amount" | "orders_12m" | "returns_12m":
             return var, parse_amount(value)
         case "date":
             return "month", parse_month(value)

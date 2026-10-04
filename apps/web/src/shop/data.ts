@@ -1,11 +1,12 @@
 // Sandbox data for the returns desk. Every customer, order and address is invented.
 // The judgment calls live in the data, never in UI text (rules: docs/returns-desk.md):
 //   RMA-1041  plain defect, normal customer: replacement
-//   RMA-1042  TV arrived broken, box crushed: carrier claim, not a refund; over 200 EUR needs a supervisor
+//   RMA-1042  lamp arrived shattered, box crushed, under 200 EUR: carrier claim, no escalation
 //   RMA-1043  opened espresso machine, changed mind: refund minus restocking fee, over 200 EUR: supervisor
 //   RMA-1044  returned 9 of the last 10 orders: flag, don't refund
 //   RMA-1045  kettle 4 days outside the window, loyal customer since 2017: goodwill refund
-//   RMA-2051  training case only: soundbar, dented box, rattling: carrier claim (the tutor's catch)
+//   RMA-2051  training case only: soundbar, dented box, 279 EUR: carrier claim AND supervisor (the tutor's catch,
+//             two rules the expert only ever showed on separate cases)
 
 export type CaseStatus = 'open' | 'escalated' | 'completed'
 
@@ -87,15 +88,15 @@ const expert = (): ReturnCase[] => [
     id: 'RMA-1042',
     orderNo: 'LH-884455',
     customer: { name: 'Tobias Krämer', email: 't.kraemer@example.com', city: 'Dortmund', since: '2021-09-02', orders12m: 4, returns12m: 1 },
-    item: 'Vista 55" 4K OLED TV',
-    sku: 'TV-VISTA-55',
-    price: 649.0,
+    item: 'Lumi glass table lamp',
+    sku: 'HOME-LUMI-LAMP',
+    price: 79.0,
     delivered: '2026-12-01',
-    carrier: 'DHL Freight',
+    carrier: 'DHL',
     opened: true,
     packaging: 'Outer box crushed at one corner (customer photo attached)',
     reason: 'Arrived damaged',
-    message: 'Unpacked it yesterday and the screen is cracked in the bottom left corner. The box already looked bad when it arrived.',
+    message: 'Unpacked it yesterday and the glass shade is shattered. The box already looked bad when it arrived.',
   }),
   open({
     id: 'RMA-1043',
