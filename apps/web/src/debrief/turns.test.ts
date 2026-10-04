@@ -31,6 +31,16 @@ describe('debrief turns', () => {
     expect(t.agent('Anything else.')).toBeNull() // nothing cued any more
   })
 
+  it('a varied acknowledgement that echoes the answer still closes the gap', () => {
+    const t = asked()
+    t.expert('Petra, but only in January.')
+    expect(t.agent('Ah, okay. Petra in January, that makes sense.')).toEqual({
+      kind: 'answered',
+      gapId: 'gap-1',
+      text: 'Petra, but only in January.',
+    })
+  })
+
   it('a follow-up question keeps the gap open', () => {
     const t = asked()
     t.expert('It depends.')
