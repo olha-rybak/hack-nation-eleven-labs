@@ -2,8 +2,19 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { SessionLayout } from '../components/SessionLayout'
 import { finishDebrief } from '../debrief/api'
+import { stepFor, useDebriefVoice, type DebriefVoiceStatus } from '../debrief/useDebriefVoice'
 import { useDraft } from '../debrief/useDraft'
+import type { DebriefStatus, DraftWorkMap } from '../types/draft'
+import { frameUrl } from '../workmap/api'
 import '../debrief/debrief.css'
+
+const voiceText: Record<DebriefVoiceStatus, string> = {
+  off: 'Voice off',
+  connecting: 'Connecting…',
+  listening: 'Listening',
+  speaking: 'Apprentice speaking',
+  error: 'Voice failed',
+}
 
 export function DebriefPage() {
   const { sessionId = '' } = useParams()
@@ -42,31 +53,96 @@ export function DebriefPage() {
         </div>
       )}
       {state.status === 'ready' && (
-        <div className="placeholder debrief">
-          <h1>{state.draft.title}</h1>
-          <p>
-            {state.debrief.done
-              ? 'Nothing left to ask. Finish to save the Work Map.'
-              : `${state.debrief.left} ${state.debrief.left === 1 ? 'gap' : 'gaps'} left, in the order the apprentice will ask them.`}
-          </p>
-          <ol className="debrief-gaps">
-            {state.debrief.queue.map((gap) => (
-              <li key={gap.id}>
-                <p className="debrief-question">{gap.question}</p>
-                <p className="debrief-why">{gap.why_it_matters}</p>
-              </li>
-            ))}
-          </ol>
-          <button type="button" className={state.debrief.done ? 'button' : 'button ghost'} disabled={finishing} onClick={finish}>
-            {finishing ? 'Saving the Work Map…' : state.debrief.done ? 'Finish debrief' : 'Stop here and save the Work Map'}
-          </button>
-          {finishError && (
-            <p className="debrief-why" role="alert">
-              {finishError}.
-            </p>
-          )}
-        </div>
+        <Debrief
+          key={state.draft.id}
+          sessionId={sessionId}
+          draft={state.draft}
+          initial={state.debrief}
+          finishing={finishing}
+          finishError={finishError}
+          onFinish={finish}
+        />
       )}
     </SessionLayout>
+  )
+}
+
+interface DebriefProps {
+  sessionId: string
+  draft: DraftWorkMap
+  initial: DebriefStatus
+  finishing: boolean
+  finishError: string | null
+  onFinish: () => void
+}
+
+function Debrief({ sessionId, draft, initial, finishing, finishError, onFinish }: DebriefProps) {
+  const voice = useDebriefVoice(sessionId, draft, initial, onFinish)
+  const { debrief, current } = voice
+  const running = voice.status !== 'off' && voice.status !== 'error'
+  const step = current && stepFor(draft, current)
+
+  return (
+    <div className="placeholder debrief">
+      <h1>{draft.title}</h1>
+      <p>
+        {debrief.done
+          ? 'Nothing left to ask. Finish to save the Work Map.'
+          : `${debrief.left} ${debrief.left === 1 ? 'gap' : 'gaps'} left${running ? '' : ', in the order the apprentice will ask them'}.`}
+      </p>
+
+      {running && (
+        <p className="debrief-why" role="status">
+          {voiceText[voice.status]}
+        </p>
+      )}
+      {voice.error && (
+        <p className="debrief-why" role="alert">
+          {voice.error}.
+        </p>
+      )}
+
+      {running && current && (
+        <section className="debrief-current" aria-label="Current question">
+          <p className="debrief-question">{current.question}</p>
+          {step && (
+            <figure>
+              <img src={frameUrl(sessionId, step.frame_ts)} alt={`The screen at ${step.title}`} />
+              <figcaption className="debrief-why">{step.title}</figcaption>
+            </figure>
+          )}
+          <button type="button" className="button ghost compact" onClick={voice.skip}>
+            Skip this question
+          </button>
+        </section>
+      )}
+
+      {!running && (
+        <ol className="debrief-gaps">
+          {debrief.queue.map((gap) => (
+            <li key={gap.id}>
+              <p className="debrief-question">{gap.question}</p>
+              <p className="debrief-why">{gap.why_it_matters}</p>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      <div className="debrief-actions">
+        {!running && !debrief.done && (
+          <button type="button" className="button" onClick={() => void voice.start()}>
+            Start debrief
+          </button>
+        )}
+        <button type="button" className={debrief.done ? 'button' : 'button ghost'} disabled={finishing} onClick={onFinish}>
+          {finishing ? 'Saving the Work Map…' : debrief.done ? 'Finish debrief' : 'Stop here and save the Work Map'}
+        </button>
+      </div>
+      {finishError && (
+        <p className="debrief-why" role="alert">
+          {finishError}.
+        </p>
+      )}
+    </div>
   )
 }

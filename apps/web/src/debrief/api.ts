@@ -50,3 +50,15 @@ export async function finishDebrief(sessionId: string): Promise<{ workmap: WorkM
   if (!res.ok) throw new Error(`Finishing the debrief failed (${await detail(res)})`)
   return (await res.json()) as { workmap: WorkMap; left_out: string[] }
 }
+
+export type DebriefAnswerBody = { gap_id: string; text: string; ts_ms: number } | { gap_id: string; declined: true }
+
+/** 409 (already closed) is not an error here: the gap is closed either way. */
+export async function answerGap(sessionId: string, body: DebriefAnswerBody): Promise<void> {
+  const res = await fetch(`${session(sessionId)}/debrief/answer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok && res.status !== 409) throw new Error(`Saving the answer failed (${await detail(res)})`)
+}

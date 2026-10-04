@@ -41,6 +41,27 @@ Draft shape (`apps/server/apprentice/workmap/draft.py`): same as the Work Map, p
 
 `DraftWorkMap.to_workmap()` raises until every reason is filled.
 
+## Voice debrief (T-203)
+
+`/debrief/:id` → **Start debrief** opens an ElevenLabs conversation (`useDebriefVoice.ts`) with
+`ELEVENLABS_DEBRIEF_AGENT_ID`, or the interviewer agent when that is empty, and
+`prompts/debrief/system.md` as a prompt override (enable *System prompt* and *First message*
+overrides in the agent's Security tab). The page cues one gap at a time:
+
+```
+NEXT_GAP
+Gap: <question>
+About: <step title>: <decision>
+Why: <why it matters>
+```
+
+The agent asks it; if the answer is vague it asks one follow-up. Its next line closes the gap
+(`debrief/turns.ts`): an acknowledgement = answered (all expert lines since the question are the
+answer), "Okay, skipping that one." = declined, "Okay, let's stop here." = stop. The page posts
+the answer, fetches the next gap, and when none is left sends `DEBRIEF_DONE`; after the closing line
+it saves the Work Map and opens `/map/:id` (the teach-back, T-204, goes here once it exists).
+**Skip this question** declines the current gap; **Stop here** saves the Work Map at any point.
+
 ## Provenance by construction
 
 The LLM never writes the expert's words. It only picks transcript line numbers and event numbers;
