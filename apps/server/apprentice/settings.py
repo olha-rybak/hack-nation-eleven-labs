@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     ELEVENLABS_INTERVIEWER_AGENT_ID: str = ""
     ELEVENLABS_DEBRIEF_AGENT_ID: str = ""  # empty: the interviewer agent, prompt sent as override
+    ELEVENLABS_TUTOR_AGENT_ID: str = ""
     LLAMA_SERVER_URL: str = "http://127.0.0.1:8080"
     LLM_SLOTS: int = 1
     LLM_TIMEOUT_SEC: float = 60

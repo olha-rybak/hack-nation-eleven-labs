@@ -54,13 +54,16 @@ def test_page_prompts_and_fixtures_are_served(api):
 
 def test_config_returns_agent_ids_from_settings(api, monkeypatch):
     configured = Settings(
-        ELEVENLABS_INTERVIEWER_AGENT_ID="agent_test", ELEVENLABS_DEBRIEF_AGENT_ID=""
+        ELEVENLABS_INTERVIEWER_AGENT_ID="agent_test",
+        ELEVENLABS_DEBRIEF_AGENT_ID="",
+        ELEVENLABS_TUTOR_AGENT_ID="tutor_test",
     )
     monkeypatch.setattr("apprentice.interviewer.get_settings", lambda: configured)
     assert api.get("/config").json() == {
         "agent_id": "agent_test",
         "debrief_agent_id": "agent_test",
         "debrief_prompt_override": True,
+        "tutor_agent_id": "tutor_test",
     }
     configured.ELEVENLABS_DEBRIEF_AGENT_ID = "agent_debrief"
     debrief = api.get("/config").json()
