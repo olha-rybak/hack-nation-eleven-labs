@@ -44,4 +44,13 @@ describe('answer pairing', () => {
     p.agent('Why is 4472 on hold?')
     expect(p.expert('Nordtec double-bills in December.')?.event_id).toBe('e2')
   })
+
+  it('hands the open ask to log_answer and stops pairing it', () => {
+    const p = new AnswerPairer()
+    p.ask('e1')
+    p.agent('Why 0400?')
+    expect(p.take()).toBe('e1')
+    expect(p.expert('Capex.')).toBeNull()
+    expect(p.take()).toBeNull()
+  })
 })

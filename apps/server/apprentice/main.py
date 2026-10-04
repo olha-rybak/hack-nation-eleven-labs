@@ -16,6 +16,8 @@ from apprentice import settings
 from apprentice.capture.pause import PauseService
 from apprentice.capture.routes import router as capture_router
 from apprentice.capture.vision import VisionService
+from apprentice.environment import get_brief, load_pack
+from apprentice.environment_routes import router as environment_router
 from apprentice.guardrails.live import LiveGuardrails
 from apprentice.interviewer import router as interviewer_router
 from apprentice.knowledge.graph import KnowledgeGraph
@@ -62,7 +64,21 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         on_events=app.state.guardrails.on_events,
     )  # fmt: skip
     app.state.map_llm = structured_llm(s)
+    app.state.environment_brief = None
+    app.state.environment_hash = None
+    brief_task = None
+    pack = load_pack(repo_path(s.ENVIRONMENT_DIR))
+    if pack:
+        app.state.environment_hash = pack.hash
+
+        async def prime() -> None:
+            brief = await get_brief(pack, app.state.map_llm, repo_path(s.ENVIRONMENT_CACHE_DIR))
+            app.state.environment_brief = app.state.vision.brief = brief
+
+        brief_task = asyncio.create_task(prime())
     yield
+    if brief_task:
+        brief_task.cancel()
     await app.state.map_llm.aclose()
     pause.stop_all()
     await app.state.llm.aclose()
@@ -75,6 +91,7 @@ app.include_router(interviewer_router)
 app.include_router(workmap_router)
 app.include_router(knowledge_router)
 app.include_router(teach_router)
+app.include_router(environment_router)
 app.mount("/prompts", StaticFiles(directory=HERE / "prompts"), name="prompts")
 app.mount("/fixtures", StaticFiles(directory=HERE.parent / "fixtures"), name="fixtures")
 
