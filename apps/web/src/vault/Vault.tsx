@@ -7,6 +7,8 @@ import { QuickSwitcher } from './QuickSwitcher'
 import { Dot } from './Dot'
 import { shortcutHint } from './shortcut'
 import { Sidebar } from './Sidebar'
+import { Splitter } from './Splitter'
+import { useColumns } from './useColumns'
 import { makeZip, type ZipFile } from './zip'
 
 type Tab = 'files' | 'note' | 'graph'
@@ -60,6 +62,7 @@ export function Vault({ sessionId, notes, demo }: Props) {
   const [tab, setTab] = useState<Tab>('note')
   const [switcher, setSwitcher] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
+  const { ref: panesRef, cols, set: resize, style: colStyle } = useColumns()
 
   const byId = useMemo(() => new Map(notes.map((n) => [n.id, n])), [notes])
   const activeId = history.stack[history.pos]!
@@ -101,7 +104,7 @@ export function Vault({ sessionId, notes, demo }: Props) {
         ))}
       </div>
 
-      <div className="v-panes">
+      <div className="v-panes" ref={panesRef} style={colStyle}>
         <aside className="v-pane v-pane-files">
           <Sidebar
             name={name}
@@ -146,6 +149,9 @@ export function Vault({ sessionId, notes, demo }: Props) {
             <NoteView note={note} notes={notes} sessionId={sessionId} onOpen={open} onTag={showTag} />
           </div>
         </main>
+
+        <Splitter side="left" width={cols.left} onResize={resize} />
+        <Splitter side="right" width={cols.right} onResize={resize} />
 
         <aside className="v-pane v-pane-graph">
           <GraphView notes={notes} activeId={note.id} onOpen={open} />
