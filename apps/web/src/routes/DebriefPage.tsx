@@ -27,8 +27,8 @@ export function DebriefPage() {
     setFinishing(true)
     setFinishError(null)
     try {
-      await finishDebrief(sessionId)
-      navigate(`/rules/${encodeURIComponent(sessionId)}`)
+      const finished = await finishDebrief(sessionId)
+      navigate(`/rules/${encodeURIComponent(sessionId)}`, { state: { noWorkMap: finished === null } })
     } catch (err) {
       setFinishError(err instanceof Error ? err.message : String(err))
       setFinishing(false)
