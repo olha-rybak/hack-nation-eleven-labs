@@ -45,6 +45,6 @@ export async function deleteRule(id: string): Promise<void> {
 
 /** The expert confirms the Work Map; only a confirmed map can teach (T-204). */
 export async function confirmWorkMap(sessionId: string): Promise<void> {
-  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/workmap/confirm`, { method: 'POST' })
+  const res = await fetch(api(`/sessions/${encodeURIComponent(sessionId)}/workmap/confirm`), { method: 'POST' })
   if (!res.ok) throw new Error(`Confirming the Work Map failed (${await detail(res)})`)
 }
