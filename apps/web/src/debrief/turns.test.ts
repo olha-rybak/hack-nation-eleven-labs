@@ -50,6 +50,8 @@ describe('debrief turns', () => {
 
   it('an acknowledgement before any answer is not an answer', () => {
     const t = asked()
+    t.expert('...')
+    t.expert(' … ')
     expect(t.agent('Take your time.')).toBeNull()
   })
 

@@ -118,8 +118,9 @@ class DebriefAnswer(BaseModel):
 
     @model_validator(mode="after")
     def _answer_or_decline(self) -> "DebriefAnswer":
-        if not self.declined and (not (self.text or "").strip() or self.ts_ms is None):
-            raise ValueError("an answer needs text and ts_ms, or declined: true")
+        has_words = any(c.isalnum() for c in self.text or "")  # "..." is speech-to-text for silence
+        if not self.declined and (not has_words or self.ts_ms is None):
+            raise ValueError("an answer needs words and ts_ms, or declined: true")
         return self
 
 

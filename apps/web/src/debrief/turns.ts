@@ -11,6 +11,8 @@ export type Outcome =
   | { kind: 'stop' }
 
 const SKIPPED = /skipping that one/i
+// Speech-to-text sends "..." for silence or noise: not an answer.
+const WORDS = /[\p{L}\p{N}]/u
 const STOPPED = /let'?s stop here/i
 
 export function nextGapText(gap: Gap, about: string | null): string {
@@ -32,7 +34,7 @@ export class DebriefTurns {
   }
 
   expert(text: string): void {
-    if (this.gapId && this.asked && text.trim()) this.answer.push(text.trim())
+    if (this.gapId && this.asked && WORDS.test(text)) this.answer.push(text.trim())
   }
 
   /** The agent spoke. Returns what happened to the current gap, or null while it is still open. */
