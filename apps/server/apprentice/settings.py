@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     GUARDRAIL_BY_QUESTION: int = 4
     SESSIONS_DIR: str = "data/sessions"
     KNOWLEDGE_PATH: str = "data/knowledge/graph.json"
+    ENVIRONMENT_DIR: str = "config/environment"
+    ENVIRONMENT_CACHE_DIR: str = "data/environment"
     KNOWN_MAX_FACTS: int = 10
     KNOWN_MAX_CHARS: int = 2000
     PAUSE_TICK_SEC: float = 0.25
