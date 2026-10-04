@@ -42,7 +42,20 @@ vision step (teammate) --POST /events--> FastAPI (apps/server)
 2. **First message:** empty. **System prompt:** paste `system.md` (used if overrides are off).
 3. **Security tab:** enable overrides for *System prompt* and *First message*, so the page can send
    the repo prompt. Keep authentication off (public agent) for local testing.
-4. Copy the agent ID.
+4. **Tools tab → client tools** (both *wait for response* on):
+   - `log_answer`: "Record the expert's answer to the question you just asked." Parameters:
+     `question` (string, required: your question as asked), `answer` (string, required: the
+     expert's answer in their own words), `about_event_id` (string, optional: the event the
+     ASK_NOW was about).
+   - `off_the_record`: "Delete the last stretch of the session when the expert asks to go off the
+     record." No parameters.
+5. **Advanced → client events:** enable `vad_score`, so the capture page can tell the pause
+   detector when the expert is talking (T-104).
+6. Copy the agent ID.
+
+The capture page (`apps/web/src/capture/useInterviewer.ts`) implements both tools. `log_answer` posts
+to `/knowledge/answers`; if the agent never calls it, the page pairs question and answer from the
+transcript instead, and each question is logged once either way.
 
 ## Run it
 
@@ -65,10 +78,6 @@ Teammate's vision step posts real events the same way:
 
 Tests: `.venv/bin/pytest -q`.
 
-## Not in the skeleton yet
+## Known issues
 
-- Sessions (one global event list in memory) — T-105.
-- Pause detector sending ASK_NOW automatically — T-104.
-- The agent may still reply when the expert narrates; tune `system.md` or handle in T-104.
-- Client tools `log_answer`, `off_the_record` — T-107.
-- Environment pack in the prompt — T-109.
+- The agent may still reply when the expert narrates; tune `system.md`.

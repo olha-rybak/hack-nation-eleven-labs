@@ -9,7 +9,8 @@ import { SpeechTracker } from './speech'
 //   ask_now from server -> sendUserMessage("ASK_NOW" + subject + Known list), the agent asks one question
 //   what is said       -> POST /sessions/:id/transcript, agent mode -> POST /sessions/:id/signals
 //   expert voice (VAD) -> POST /sessions/:id/signals {user_speaking}, so no question lands mid-sentence
-//   question + answer  -> POST /knowledge/answers, so the next session doesn't ask it again
+//   question + answer  -> POST /knowledge/answers via the agent's log_answer tool, or paired from the
+//                         transcript if it doesn't call it; once per question
 //   environment brief  -> GET /environment/brief once connected, sendContextualUpdate ("About this application:")
 //   off_the_record     -> client tool calling the same feed.offTheRecord as the panel button
 //   paused             -> mic muted, no transcript/answers/VAD posts (nothing from voice while paused)
@@ -92,6 +93,7 @@ export function useInterviewer(
     let closed = false
     const sentEvents = new Set<string>()
     const pairer = new AnswerPairer()
+    const logged = new Set<string>()
     const speech = new SpeechTracker(VAD_THRESHOLD, VAD_RELEASE_MS)
     const userSpeaking = (speaking: boolean | null) => {
       if (pausedRef.current) return
@@ -131,6 +133,19 @@ export function useInterviewer(
           agentId: config.agent_id,
           connectionType: 'webrtc',
           clientTools: {
+            log_answer: async (params: { question?: string; answer?: string; about_event_id?: string }) => {
+              if (pausedRef.current) return 'Recording is paused; nothing was logged.'
+              const pending = pairer.take()
+              const eventId = params.about_event_id?.trim() || pending
+              const question = params.question?.trim()
+              const answer = params.answer?.trim()
+              if (!question || !answer) return 'Both question and answer are needed; nothing was logged.'
+              if (!eventId) return 'No open question to attach this answer to; nothing was logged.'
+              if (logged.has(eventId)) return 'Already logged.'
+              logged.add(eventId)
+              post('/knowledge/answers', { session_id: sessionId, event_id: eventId, question, answer })
+              return 'Logged.'
+            },
             off_the_record: async () => {
               if (pausedRef.current) return 'Recording is paused; nothing is being recorded.'
               const handler = onOffTheRecordRef.current
@@ -162,7 +177,10 @@ export function useInterviewer(
             if (role === 'agent') pairer.agent(message)
             else {
               const answer = pairer.expert(message)
-              if (answer) post('/knowledge/answers', { session_id: sessionId, ...answer })
+              if (answer && !logged.has(answer.event_id)) {
+                logged.add(answer.event_id)
+                post('/knowledge/answers', { session_id: sessionId, ...answer })
+              }
             }
           },
           onDisconnect: () => {
