@@ -58,7 +58,8 @@ export function CapturePanel(props: Props) {
 
   function highlight(eventId: string) {
     setFlash(eventId)
-    document.getElementById(`ev-${eventId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // The panel may live in its own window, so look in the list's document.
+    listRef.current?.ownerDocument.getElementById(`ev-${eventId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     setTimeout(() => setFlash((f) => (f === eventId ? null : f)), 1600)
   }
 

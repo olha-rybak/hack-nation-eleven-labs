@@ -350,7 +350,8 @@ code {
 
 /* Panel window: docked beside the stage, floating over it, or minimized to a pill */
 
-.session-layout:has(> .panel-frame.floating, > .panel-frame[hidden]) {
+/* Only a docked panel takes a column. */
+.session-layout:not(:has(> .panel-frame:not(.floating):not([hidden]))) {
   grid-template-columns: minmax(0, 1fr);
 }
 
@@ -389,6 +390,62 @@ code {
 .panel-frame.floating.dragging {
   transition: none;
   user-select: none;
+}
+
+.panel-resize {
+  position: absolute;
+  bottom: 0;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  touch-action: none;
+}
+
+.panel-resize.se {
+  right: 0;
+  cursor: nwse-resize;
+}
+
+.panel-resize.sw {
+  left: 0;
+  cursor: nesw-resize;
+}
+
+/* Two short diagonal strokes in the corner, like a native window grip */
+.panel-resize::after {
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  width: 8px;
+  height: 8px;
+  background: linear-gradient(135deg, transparent 45%, var(--muted) 45% 55%, transparent 55% 70%, var(--muted) 70% 80%, transparent 80%);
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.panel-resize.se::after {
+  right: 5px;
+}
+
+.panel-resize.sw::after {
+  left: 5px;
+  transform: scaleX(-1);
+}
+
+.panel-frame.floating:hover .panel-resize::after,
+.panel-frame.floating.dragging .panel-resize::after {
+  opacity: 0.6;
+}
+
+/* The panel in its own window fills it. */
+.panel-window-body {
+  margin: 0;
+  background: var(--panel);
+}
+
+.panel-frame.own-window {
+  height: 100vh;
+  border: 0;
 }
 
 .panel-bar {
@@ -487,6 +544,13 @@ code {
   font-size: 12px;
   letter-spacing: -0.12px;
   font-variant-numeric: tabular-nums;
+}
+
+.panel-pill-action {
+  color: var(--link);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.12px;
 }
 
 .panel-pill-badge {
@@ -649,7 +713,7 @@ code {
     grid-template-rows: auto minmax(240px, 40vh);
   }
 
-  .session-layout:has(> .panel-frame.floating, > .panel-frame[hidden]) {
+  .session-layout:not(:has(> .panel-frame:not(.floating):not([hidden]))) {
     grid-template-rows: minmax(0, 1fr);
   }
 
