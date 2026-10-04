@@ -26,9 +26,10 @@ RUN if [ "$WITH_PRIVACY" = "1" ]; then \
 COPY config config
 COPY apps/server/tests/fixtures/workmap_returns.json apps/server/tests/fixtures/
 COPY apps/web/public/mock-frames apps/web/public/mock-frames
-COPY deploy deploy
+COPY scripts/seed_demo_session.py scripts/
 
 # /data must be a persistent volume: sessions and Work Maps live there.
 VOLUME /data
 EXPOSE 8000
-CMD python deploy/seed_demo.py && exec uvicorn apprentice.main:app --app-dir apps/server --host 0.0.0.0 --port ${PORT:-8000}
+# The seed exits 1 when demo-brandt already exists (normal after the first start): carry on.
+CMD python scripts/seed_demo_session.py; exec uvicorn apprentice.main:app --app-dir apps/server --host 0.0.0.0 --port ${PORT:-8000}

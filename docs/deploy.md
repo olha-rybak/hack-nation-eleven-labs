@@ -24,7 +24,7 @@ docker run -p 8000:8000 -v apprentice-data:/data --env-file .env apprentice-serv
 - **Mount a persistent volume at `/data`.** Sessions, Work Maps and the knowledge graph live there;
   without a volume every restart or redeploy deletes them.
 - On first start it seeds the example session `demo-brandt` (returns-desk Work Map with
-  screenshots, `deploy/seed_demo.py`). It never touches a session that already exists.
+  screenshots, `scripts/seed_demo_session.py`). It never touches a session that already exists.
 
 Environment (set as secrets on the host; see `.env.example` for the rest):
 
@@ -32,7 +32,7 @@ Environment (set as secrets on the host; see `.env.example` for the rest):
 |---|---|
 | `ANTHROPIC_API_KEY` | Required: draft Work Map, rules, brief, vision |
 | `VISION_PROVIDER` | `anthropic` (there is no local model on the host) |
-| `ELEVENLABS_INTERVIEWER_AGENT_ID`, `ELEVENLABS_DEBRIEF_AGENT_ID` | The two agents; both must allow public access in the ElevenLabs dashboard |
+| `ELEVENLABS_INTERVIEWER_AGENT_ID`, `ELEVENLABS_DEBRIEF_AGENT_ID`, `ELEVENLABS_TUTOR_AGENT_ID` | The three agents; each must allow public access in the ElevenLabs dashboard |
 | `CORS_ORIGINS` | The Vercel URL, e.g. `https://apprentice.vercel.app` (default `*`) |
 | `PRESIDIO_ENABLED` | Set by the image: on with `WITH_PRIVACY=1`, off otherwise |
 

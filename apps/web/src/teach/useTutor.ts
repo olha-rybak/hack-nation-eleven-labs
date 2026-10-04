@@ -1,6 +1,7 @@
 import { Conversation, type Mode } from '@elevenlabs/client'
 import { useEffect, useRef, useState } from 'react'
 import { SpeechTracker } from '../capture/speech'
+import { api, wsUrl } from '../lib/api'
 import type { ScreenEvent } from '../types/session'
 import type { WorkMap } from '../types/workmap'
 import {
@@ -40,7 +41,7 @@ type ServerMessage =
   | { type: string; data: unknown }
 
 function post(path: string, body: unknown) {
-  void fetch(`/api${path}`, {
+  void fetch(api(path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -101,8 +102,7 @@ export function useTutor(sessionId: string | null, startedAt: number | null, map
     }
 
     // The screen side works without the voice: interventions still show if the agent is down.
-    const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
-    socket = new WebSocket(`${protocol}://${location.host}/api/ws/session/${sid}`)
+    socket = new WebSocket(wsUrl(`/ws/session/${sid}`))
     socket.addEventListener('message', (m) => {
       const msg = JSON.parse(m.data) as ServerMessage
       if (msg.type === 'snapshot') {
@@ -125,7 +125,7 @@ export function useTutor(sessionId: string | null, startedAt: number | null, map
       setStatus('connecting')
       setError(null)
       try {
-        const config = (await (await fetch('/api/config')).json()) as { tutor_agent_id?: string }
+        const config = (await (await fetch(api('/config'))).json()) as { tutor_agent_id?: string }
         if (!config.tutor_agent_id) throw new Error('ELEVENLABS_TUTOR_AGENT_ID is not set in .env')
         const conv = await Conversation.startSession({
           agentId: config.tutor_agent_id,
