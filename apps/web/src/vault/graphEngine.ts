@@ -13,6 +13,8 @@ interface SimNode extends GraphNode {
   s: number // hover scale, sprung
   sv: number
   la: number // label opacity
+  dim: number // eased 0..1: faded and blurred while another note is hovered
+  glow: number // eased 0..1: hovered or active
   slot: number // label position that fit last frame, tried first next frame
   lx: number
   ly: number
@@ -70,9 +72,11 @@ const EDGE_DELAY = 220
 const EDGE_MS = 520
 const SHOCK_MS = 1000
 const SPARK_MS = 700
-const LABEL_H = 18
+const LABEL_H = 14
 const LABEL_FONT = '500 11px system-ui, -apple-system, "Segoe UI", sans-serif'
 const LABEL_FONT_STRONG = '600 11px system-ui, -apple-system, "Segoe UI", sans-serif'
+const HOVER_MS = 160 // time constant of the hover transitions
+const BLUR_PX = 2.5
 
 const clamp01 = (t: number) => Math.min(Math.max(t, 0), 1)
 const easeOutCubic = (t: number) => 1 - (1 - t) ** 3
@@ -130,6 +134,8 @@ export function createGraphEngine(
       s: 1,
       sv: 0,
       la: 0,
+      dim: 0,
+      glow: 0,
       slot: 0,
       lx: 0,
       ly: 0,
@@ -143,7 +149,8 @@ export function createGraphEngine(
   const edges = graph.edges.flatMap((e) => {
     const a = byId.get(e.source)
     const b = byId.get(e.target)
-    return a && b ? [{ a, b, seed: Math.random() }] : []
+    // lit and dim ease like the nodes; from is the end the signal particles leave.
+    return a && b ? [{ a, b, seed: Math.random(), lit: 0, dim: 0, from: a }] : []
   })
 
   let view: View = { x: 0, y: 0, k: 1 }
@@ -162,6 +169,8 @@ export function createGraphEngine(
   let dpr = 1
   let raf = 0
   let dead = false
+  let last = performance.now()
+  let easing = false
   const textWidth = new Map<string, number>()
 
   const screenR = (n: SimNode) => n.r * Math.max(0.7, Math.min(view.k, 2))
@@ -281,8 +290,8 @@ export function createGraphEngine(
     ranked.sort((a, b) => b.p - a.p)
     const shown = new Set<SimNode>()
     for (const { n, p } of ranked) {
-      const lw = measure(labelText(n), p >= 3) + 14
-      const gap = n.sr + 5
+      const lw = measure(labelText(n), p >= 3) + 4
+      const gap = n.sr + 4
       const candidates: Rect[] = [
         { x: n.px - lw / 2, y: n.py + gap, w: lw, h: LABEL_H },
         { x: n.px - lw / 2, y: n.py - gap - LABEL_H, w: lw, h: LABEL_H },
@@ -332,37 +341,67 @@ export function createGraphEngine(
     const activeNear = adj.get(active)
     const center = focus ?? active
     const dimmed = (n: SimNode) => focus !== null && n.id !== focus && !near!.has(n.id)
+    const t = 1 - Math.exp(-Math.min(now - last, 64) / HOVER_MS)
+    last = now
+    easing = false
+    const ease = (from: number, to: number) => {
+      const next = from + (to - from) * t
+      if (Math.abs(to - next) < 0.005) return to
+      easing = true
+      return next
+    }
+    for (const n of nodes) {
+      n.dim = ease(n.dim, dimmed(n) ? 1 : 0)
+      n.glow = ease(n.glow, n.id === focus || n.id === active ? 1 : 0)
+    }
+    for (const e of edges) {
+      const isLit = e.a.id === center || e.b.id === center
+      if (isLit) e.from = e.a.id === center ? e.a : e.b
+      e.lit = ease(e.lit, isLit ? 1 : 0)
+      e.dim = ease(e.dim, focus !== null && e.a.id !== focus && e.b.id !== focus ? 1 : 0)
+    }
 
     drawGrid(edgeColor)
 
     // Edges draw themselves in once both ends have appeared.
     ctx.lineCap = 'round'
-    for (const { a, b } of edges) {
+    for (const e of edges) {
+      const { a, b } = e
       const fade = Math.min(a.a, b.a)
       if (fade <= 0) continue
       const grow = motion ? easeOutCubic(clamp01((now - Math.max(a.born, b.born) - EDGE_DELAY) / EDGE_MS)) : 1
       if (grow <= 0) continue
-      const lit = a.id === center || b.id === center
-      ctx.globalAlpha = fade * (focus !== null && !lit ? 0.1 : lit ? 0.95 : 0.7)
-      ctx.strokeStyle = lit ? accent : edgeColor
-      ctx.lineWidth = lit ? 1.6 : 1
-      ctx.shadowBlur = lit ? 8 : 0
-      ctx.shadowColor = accent
-      const [from, to] = b.id === center ? [b, a] : [a, b]
-      ctx.beginPath()
-      ctx.moveTo(from.px, from.py)
-      ctx.lineTo(from.px + (to.px - from.px) * grow, from.py + (to.py - from.py) * grow)
-      ctx.stroke()
+      const from = e.from
+      const to = from === a ? b : a
+      const x = from.px + (to.px - from.px) * grow
+      const y = from.py + (to.py - from.py) * grow
+      const alpha = fade * (0.7 - 0.6 * e.dim)
+      // Cross-fade the plain edge into the highlighted one.
+      for (const [stroke, weight, width, blur] of [
+        [edgeColor, 1 - e.lit, 1, 0],
+        [accent, e.lit, 1.6, 8],
+      ] as const) {
+        if (weight <= 0) continue
+        ctx.globalAlpha = alpha * weight + (stroke === accent ? 0.25 * weight * (1 - e.dim) : 0)
+        ctx.strokeStyle = stroke
+        ctx.lineWidth = width
+        ctx.shadowBlur = blur * weight
+        ctx.shadowColor = accent
+        ctx.beginPath()
+        ctx.moveTo(from.px, from.py)
+        ctx.lineTo(x, y)
+        ctx.stroke()
+      }
     }
     ctx.shadowBlur = 0
 
     // Signals flow outward along the links of the active (or hovered) note.
     if (motion) {
-      for (const { a, b, seed } of edges) {
-        if ((a.id !== center && b.id !== center) || Math.min(a.a, b.a) < 0.5) continue
-        const grow = clamp01((now - Math.max(a.born, b.born) - EDGE_DELAY - EDGE_MS) / 400)
+      for (const { a, b, seed, lit, from } of edges) {
+        if (lit <= 0.01 || Math.min(a.a, b.a) < 0.5) continue
+        const grow = clamp01((now - Math.max(a.born, b.born) - EDGE_DELAY - EDGE_MS) / 400) * lit
         if (grow <= 0) continue
-        const [from, to] = a.id === center ? [a, b] : [b, a]
+        const to = from === a ? b : a
         for (let i = 0; i < 2; i++) {
           const f = (now / 1500 + seed + i / 2) % 1
           ctx.globalAlpha = Math.sin(Math.PI * f) * grow
@@ -404,8 +443,9 @@ export function createGraphEngine(
 
     for (const n of nodes) {
       if (n.a <= 0 || n.sr <= 0.2) continue
-      const base = n.a * (dimmed(n) ? 0.2 : 1)
+      const base = n.a * (1 - 0.7 * n.dim)
       const fill = kindColor[n.kind]
+      ctx.filter = n.dim > 0.01 ? `blur(${(n.dim * BLUR_PX).toFixed(2)}px)` : 'none'
       if (motion && n.kind === 'stop') {
         const breath = Math.sin(now / 650 + n.phase)
         ctx.globalAlpha = base * (0.16 + 0.1 * breath)
@@ -427,7 +467,7 @@ export function createGraphEngine(
         ctx.stroke()
       }
       ctx.globalAlpha = base
-      ctx.shadowBlur = n.id === focus || n.id === active ? 18 : 7
+      ctx.shadowBlur = 7 + 11 * n.glow
       ctx.shadowColor = fill
       ctx.fillStyle = fill
       ctx.beginPath()
@@ -442,6 +482,7 @@ export function createGraphEngine(
       ctx.fillStyle = gloss
       ctx.fill()
     }
+    ctx.filter = 'none'
 
     sparks = sparks.filter((s) => now - s.born < SPARK_MS)
     for (const s of sparks) {
@@ -471,25 +512,23 @@ export function createGraphEngine(
       if (n.la <= 0 || n.a <= 0) continue
       const p = priority(n)
       const text = labelText(n)
-      const lw = measure(text, p >= 3) + 14
-      const lit = n.id === focus || n.id === active
-      ctx.globalAlpha = n.la * n.a * (dimmed(n) ? 0.2 : 1)
-      ctx.fillStyle = halo
-      ctx.strokeStyle = lit ? accent : edgeColor
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.roundRect(n.lx, n.ly, lw, LABEL_H, LABEL_H / 2)
-      ctx.fill()
-      ctx.stroke()
+      // Plain text on a soft halo, so it stays readable over edges.
+      ctx.globalAlpha = n.la * n.a * (1 - 0.7 * n.dim) * (0.78 + 0.22 * n.glow)
+      ctx.filter = n.dim > 0.01 ? `blur(${(n.dim * BLUR_PX).toFixed(2)}px)` : 'none'
       ctx.font = p >= 3 ? LABEL_FONT_STRONG : LABEL_FONT
-      ctx.fillStyle = lit ? accent : labelColor
-      ctx.fillText(text, n.lx + 7, n.ly + LABEL_H / 2 + 0.5)
+      ctx.lineJoin = 'round'
+      ctx.lineWidth = 3.5
+      ctx.strokeStyle = halo
+      ctx.strokeText(text, n.lx + 2, n.ly + LABEL_H / 2 + 0.5)
+      ctx.fillStyle = n.glow > 0.5 ? accent : labelColor
+      ctx.fillText(text, n.lx + 2, n.ly + LABEL_H / 2 + 0.5)
     }
+    ctx.filter = 'none'
     ctx.globalAlpha = 1
   }
 
   // Labels fade, so a frame where only they change still counts as moving.
-  const labelsMoving = () => nodes.some((n) => n.la > 0 && n.la < 1)
+  const labelsMoving = () => easing || nodes.some((n) => n.la > 0 && n.la < 1)
 
   function frame() {
     raf = 0
