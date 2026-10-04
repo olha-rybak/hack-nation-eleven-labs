@@ -22,8 +22,9 @@ Status: `planned` = not written yet, `draft` = exists, may change, `stable` = ot
 | `environment-pack.md` | Glossary, written rules, task: what the agent must not ask | T-109 | planned |
 | `question-selection.md` | How the one question is picked from events | T-108 | planned |
 | [knowledge-graph.md](knowledge-graph.md) | Facts from expert answers across sessions; the Known slice sent with ASK_NOW | T-110 | draft |
+| [returns-desk.md](returns-desk.md) | Returns desk sandbox app (`/shop`): expert rules, cases, training case, expert script | scenario | draft |
 
 ## Open decisions
 
-- Scenario: invoices (tickets, INV-4471–4474) vs credit control (`credit-control-ui/`). Blocks prompts
-  and the environment pack.
+- Scenario: invoices (tickets, INV-4471–4474) vs credit control (`credit-control-ui/`) vs returns desk
+  (`/shop`, [returns-desk.md](returns-desk.md)). Blocks prompts and the environment pack.
