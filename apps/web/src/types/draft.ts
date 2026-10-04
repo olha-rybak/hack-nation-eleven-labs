@@ -38,6 +38,7 @@ export interface Gap {
   importance: number // 1-5
   status: GapStatus
   answer: Quote | null // the expert's debrief answer, once answered
+  fact_id: string | null // answered in an earlier session (knowledge graph), not asked
 }
 
 /** GET /sessions/:id/debrief */
