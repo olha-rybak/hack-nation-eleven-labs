@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import fixture from '../../../server/tests/fixtures/workmap_guardrails.json'
 import type { WorkMap } from '../types/workmap'
-import { TeachLive } from './TeachLive'
-import { hitFrameTs, hitKey, type GuardrailHit } from './tutorCues'
+import { ExpertReplay, TeachLive } from './TeachLive'
+import { currentIntervention, hitFrameTs, hitKey, type GuardrailHit } from './tutorCues'
 import { toTutorReport } from './useTutorReport'
 
 const map = fixture as WorkMap
@@ -13,7 +13,10 @@ const hit: GuardrailHit = {
   entity: 'invoice 4471', event_id: 'e1', frame_refs: ['frames/0000192000.jpg'],
   source_session_id: map.session_id, timing: 'on_edit', ts_ms: 2000,
 }
-const render = (resolved = new Set<string>()) => renderToStaticMarkup(<TeachLive hits={[hit]} resolved={resolved} map={map} />)
+const render = (resolved = new Set<string>(), revealed = false) => {
+  const current = currentIntervention([hit], resolved)!
+  return renderToStaticMarkup(<TeachLive intervention={current} map={map} revealed={revealed} onReveal={() => {}} onClose={() => {}} />)
+}
 
 describe('live intervention', () => {
   it('asks first and keeps the rule and quote back until reveal', () => {
@@ -30,15 +33,24 @@ describe('live intervention', () => {
     expect(html).toContain(rule.reason.text.replaceAll("'", '&#x27;'))
   })
 
+  it('on reveal shows the decision and words, the frame goes next to the screen instead', () => {
+    const html = render(new Set(), true)
+    expect(html).toContain(rule.statement)
+    expect(html).not.toContain('<img')
+    const replay = renderToStaticMarkup(<ExpertReplay hit={hit} map={map} />)
+    expect(replay).toContain(`${rule.reason.speaker}’s screen`)
+    expect(replay).toContain('<img')
+  })
+
   it('an open intervention wins over a newer resolved one', () => {
     const other = { ...hit, guardrail_id: map.guardrails[1].id, statement: map.guardrails[1].statement }
-    const html = renderToStaticMarkup(<TeachLive hits={[other, hit]} resolved={new Set([hitKey(hit)])} map={map} />)
-    expect(html).toContain('would stop here.')
-    expect(html).not.toContain('Fixed before saving.')
+    const current = currentIntervention([other, hit], new Set([hitKey(hit)]))!
+    expect(current.hit.guardrail_id).toBe(other.guardrail_id)
+    expect(current.resolved).toBe(false)
   })
 
   it('nothing to show without a hit', () => {
-    expect(renderToStaticMarkup(<TeachLive hits={[]} resolved={new Set()} map={map} />)).toBe('')
+    expect(currentIntervention([], new Set())).toBeNull()
   })
 
   it('finds the expert frame from the map, else from the frame ref', () => {

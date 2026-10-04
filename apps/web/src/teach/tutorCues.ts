@@ -27,6 +27,13 @@ export interface GuardrailResolved {
 
 export const hitKey = (h: { guardrail_id: string; entity: string }) => `${h.guardrail_id}|${h.entity}`
 
+/** The intervention to show: the newest open one, else the newest one (then shown as resolved). */
+export function currentIntervention(hits: GuardrailHit[], resolved: Set<string>) {
+  const hit = hits.findLast((h) => !resolved.has(hitKey(h))) ?? hits.at(-1)
+  if (!hit) return null
+  return { hit, id: `${hitKey(hit)}#${hits.lastIndexOf(hit)}`, resolved: resolved.has(hitKey(hit)) }
+}
+
 /** The expert's screen moment for a hit: the guardrail's own frame, else the first frame ref. */
 export function hitFrameTs(hit: GuardrailHit, map: WorkMap): number | null {
   const rule = map.guardrails.find((g) => g.id === hit.guardrail_id)

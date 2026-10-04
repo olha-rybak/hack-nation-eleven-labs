@@ -8,6 +8,8 @@ export interface TutorEvidence {
   timestamp: number
   decision: string
   quote: Quote
+  /** false when the frame is shown elsewhere, e.g. next to the trainee's screen */
+  showFrame?: boolean
 }
 export interface TutorGuardrailOutcome {
   statement: string
@@ -65,7 +67,7 @@ export function TutorPresentation({ view, reason, onReason, onReveal, onContinue
       <ReportList title="Practise next" items={view.report.practiceNext} empty="No follow-up practice was supplied." />
     </div> : <p className="teach-notice" role="status">The tutor has not supplied a report yet. No assessment can be inferred from this session.</p>)}
     {/* Dismissing an intervention must never imply resolution. Only a new supplied view can do that. */}
-    {(view.kind === 'resolved' || view.kind === 'finished' || view.kind === 'disconnected') && <button type="button" className="teach-button teach-glass" onClick={onContinue}>{view.kind === 'disconnected' ? 'Retry connection' : view.kind === 'finished' ? 'Review Work Map' : 'Continue practice →'}</button>}
+    {(view.kind === 'resolved' || view.kind === 'finished' || view.kind === 'disconnected') && <button type="button" className="teach-button teach-glass" onClick={onContinue}>{view.kind === 'disconnected' ? 'Retry connection' : view.kind === 'finished' ? 'Open in Vault' : 'Continue practice →'}</button>}
   </section>
 }
 

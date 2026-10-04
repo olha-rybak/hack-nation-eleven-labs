@@ -44,7 +44,7 @@ color themes. DO_NOT_TOUCH.md remains local-only and must never be published.
 Manual review now keeps local reasoning notes per step for the current practice.
 Restarting clears them; they are not sent or persisted. Reveal, dismissal, step
 changes, finish and restart move keyboard focus to the relevant guidance. Expert
-frames open in the existing modal FrameViewer, with Escape and Close controls.
+frames open in a modal viewer (TeachFrameViewer), with Escape and Close controls.
 The browser's native modal traps focus; the tutor wrapper restores focus to the opener on close.
 
 No new server contracts or agent logic were introduced. Real capture verification
