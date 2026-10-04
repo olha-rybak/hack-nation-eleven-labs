@@ -42,6 +42,7 @@ export class ScreenCapture {
   private lastTs = -1
   private queue: Promise<void> = Promise.resolve()
   private stopped = false
+  private isPaused = false
   private onStats: (stats: CaptureStats) => void
   private onEnded: () => void
 
@@ -91,7 +92,7 @@ export class ScreenCapture {
   }
 
   private tick() {
-    if (this.stopped) return
+    if (this.stopped || this.isPaused) return
     const frameTs = this.now()
     this.stats.ticks++
     this.queue = this.queue.then(() => this.process(frameTs))
@@ -141,6 +142,23 @@ export class ScreenCapture {
       if (jpeg) this.lastSent = null
     }
     this.onStats({ ...this.stats })
+  }
+
+  get paused(): boolean {
+    return this.isPaused
+  }
+
+  pause(): void {
+    if (this.stopped) return
+    this.isPaused = true
+  }
+
+  resume(): void {
+    if (this.stopped || !this.isPaused) return
+    this.isPaused = false
+    this.lastSent = null
+    // Already queued frames may finish; reset again before the first resumed frame.
+    this.queue = this.queue.then(() => { this.lastSent = null })
   }
 
   async stop(): Promise<void> {

@@ -123,6 +123,11 @@
   animation: cap-pulse 1.6s ease-in-out infinite;
 }
 
+.cap-recording.paused .cap-dot {
+  background: var(--muted, #8e8e93);
+  animation: none;
+}
+
 @keyframes cap-pulse {
   50% {
     opacity: 0.35;
