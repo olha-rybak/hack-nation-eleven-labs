@@ -1,5 +1,6 @@
 import { Conversation, type Mode } from '@elevenlabs/client'
 import { useEffect, useRef, useState } from 'react'
+import { MicGate } from '../lib/micGate'
 import type { DebriefStatus, DraftStep, DraftWorkMap, Gap } from '../types/draft'
 import { answerGap, fetchDebrief } from './api'
 import { DebriefTurns, nextGapText } from './turns'
@@ -9,6 +10,8 @@ import { DebriefTurns, nextGapText } from './turns'
 //   agent's reply after answer  -> DebriefTurns: answered / declined / stop
 //   answered or declined        -> POST /debrief/answer, then the next gap
 //   nothing left, or stop       -> DEBRIEF_DONE, closing line, then onFinished (saves the Work Map)
+//   mic                         -> muted while the agent speaks and after the expert answered; open
+//                                  after each line the agent says, until the closing line (MicGate)
 
 export type DebriefVoiceStatus = 'off' | 'connecting' | 'listening' | 'speaking' | 'error'
 
@@ -22,6 +25,7 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
   const [error, setError] = useState<string | null>(null)
   const [debrief, setDebrief] = useState(initial)
   const [current, setCurrent] = useState<Gap | null>(null)
+  const [micOpen, setMicOpen] = useState(false)
   const conversation = useRef<Conversation | null>(null)
   const asking = useRef<Gap | null>(null)
   const skipRef = useRef<() => void>(() => {})
@@ -38,6 +42,16 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
     const now = () => base + Math.round(performance.now() - t0)
     let closing = false // DEBRIEF_DONE sent, or the expert asked to stop
     let closingSaid = false
+    // No answer window: the expert has nothing else to do, and a slow answer must not be cut off.
+    const gate = new MicGate(Number.POSITIVE_INFINITY)
+    let mic: boolean | null = null
+    const applyMic = () => {
+      const open = gate.open(performance.now())
+      if (!conversation.current || open === mic) return
+      mic = open
+      conversation.current.setMicMuted(!open)
+      setMicOpen(open)
+    }
     let queue = Promise.resolve()
     const serial = (work: () => Promise<void>) => {
       queue = queue.then(work).catch((err: unknown) => {
@@ -88,24 +102,37 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
         overrides,
         onModeChange: ({ mode }: { mode: Mode }) => {
           setStatus(mode)
+          gate.agentMode(mode === 'speaking', performance.now())
+          applyMic()
           if (closing && closingSaid && mode === 'listening') {
             closing = closingSaid = false
             void conversation.current?.endSession()
             conversation.current = null
             setStatus('off')
+            setMicOpen(false)
             onFinished()
           }
         },
         onMessage: ({ message, role }) => {
-          if (role !== 'agent') return turns.expert(message)
+          if (role !== 'agent') {
+            gate.close()
+            applyMic()
+            return turns.expert(message)
+          }
           if (closing) {
             closingSaid = true
+            gate.close()
+            applyMic()
             return
           }
+          gate.question(performance.now())
+          applyMic()
           const outcome = turns.agent(message)
           if (!outcome) return
           if (outcome.kind === 'stop') {
             closing = closingSaid = true // the stop line is the closing line
+            gate.close()
+            applyMic()
             return
           }
           serial(async () => {
@@ -122,6 +149,7 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
           setError(message)
         },
       })
+      applyMic() // muted until the first question
       setStatus('listening')
       serial(advance)
     } catch (err) {
@@ -130,5 +158,5 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
     }
   }
 
-  return { status, error, debrief, current, start, skip: () => skipRef.current() }
+  return { status, error, debrief, current, micOpen, start, skip: () => skipRef.current() }
 }
