@@ -22,7 +22,8 @@ from apprentice.workmap.schema import GuardrailCheck, Quote
 log = logging.getLogger(__name__)
 
 AGENT_SPEAKERS = {"agent", "apprentice", "ai", "assistant", "tutor", "interviewer"}
-CUES = {"ASK_NOW"}  # control messages sent to the agent as user turns, not the expert speaking
+# control messages sent to the agent as user turns, not the expert speaking
+CUES = {"ASK_NOW", "NEXT_GAP", "DEBRIEF_DONE"}
 DECISIVE = {"edit": 0, "hold": 0, "route": 0, "save": 1, "open": 2, "navigate": 3, "unknown": 4}
 
 

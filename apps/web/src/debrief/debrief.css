@@ -33,3 +33,38 @@
   font: 400 14px/1.43 var(--font-text);
   letter-spacing: -0.224px;
 }
+
+.debrief-current {
+  margin: 32px 0;
+}
+
+.debrief-current .debrief-question {
+  font: 600 28px/1.14 var(--font-display);
+  letter-spacing: 0.196px;
+}
+
+.debrief-current figure {
+  margin: 20px 0 16px;
+}
+
+.debrief-current img {
+  display: block;
+  max-width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--hairline);
+}
+
+.debrief-current figcaption {
+  margin-top: 8px;
+}
+
+.debrief-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.placeholder .debrief-actions .button {
+  margin-top: 0;
+}
