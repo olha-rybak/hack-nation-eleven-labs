@@ -46,6 +46,31 @@
   box-shadow: none;
 }
 
+.cp-live {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff3b30;
+  animation: cp-live 1.6s ease-in-out infinite;
+}
+
+.cp-watching.paused .cp-live {
+  background: var(--muted);
+  animation: none;
+}
+
+@keyframes cp-live {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-live {
+    animation: none;
+  }
+}
+
 .cp-explain {
   margin: 0;
   padding: 0 20px 12px;

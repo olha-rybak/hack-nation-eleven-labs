@@ -11,16 +11,22 @@ interface Props {
   /** Shown on the panel when it is minimized. */
   panelSummary?: string
   panelActivity?: number
+  /** False keeps the panel off the page, e.g. before there is a session to show. */
+  showPanel?: boolean
+  /** Pop the panel into its own window when the expert switches tabs. */
+  autoPopOut?: boolean
   children: ReactNode
 }
 
-export function SessionLayout({ sessionId, panelTitle, bleed = false, panel, panelSummary, panelActivity, children }: Props) {
+export function SessionLayout({ sessionId, panelTitle, bleed = false, panel, panelSummary, panelActivity, showPanel = true, autoPopOut, children }: Props) {
   return (
     <div className="session-layout">
       <main className={bleed ? 'stage bleed' : 'stage'}>{children}</main>
-      <PanelWindow title={panelTitle} summary={panelSummary} activity={panelActivity}>
-        {panel ?? <SidePanel sessionId={sessionId} title={panelTitle} />}
-      </PanelWindow>
+      {showPanel && (
+        <PanelWindow title={panelTitle} summary={panelSummary} activity={panelActivity} autoPopOut={autoPopOut}>
+          {panel ?? <SidePanel sessionId={sessionId} title={panelTitle} />}
+        </PanelWindow>
+      )}
     </div>
   )
 }

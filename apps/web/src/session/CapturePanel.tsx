@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { spoken } from '../lib/spoken'
 import { formatTs } from '../lib/time'
 import type { AskCue, EventCorrection, OffRecordRemoved, ScreenEvent, TranscriptLine } from '../types/session'
 import { describeEvent, LOW_CONFIDENCE } from './describe'
@@ -101,16 +102,25 @@ export function CapturePanel(props: Props) {
     <aside className="side-panel cp" aria-label="Apprentice">
       <header className="cp-head">
         <h2>Apprentice</h2>
-        <div className="cp-budget" aria-label={`${asked} of ${budget} live questions asked`}>
-          <span>
-            {asked} of {budget} asked
-          </span>
-          <span className="cp-dots" aria-hidden="true">
-            {Array.from({ length: budget }, (_, i) => (
-              <i key={i} className={i < asked ? 'on' : ''} />
-            ))}
-          </span>
-        </div>
+        {asks.length > 0 ? (
+          <div className="cp-budget" aria-label={`${asked} of ${budget} live questions asked`}>
+            <span>
+              {asked} of {budget} asked
+            </span>
+            <span className="cp-dots" aria-hidden="true">
+              {Array.from({ length: budget }, (_, i) => (
+                <i key={i} className={i < asked ? 'on' : ''} />
+              ))}
+            </span>
+          </div>
+        ) : (
+          live && (
+            <div className={`cp-budget cp-watching${paused ? ' paused' : ''}`} role="status">
+              <span className="cp-live" aria-hidden="true" />
+              {paused ? 'Paused' : 'Watching'}
+            </div>
+          )
+        )}
       </header>
 
       <p className="cp-explain">What the apprentice saw and heard. Select an event to correct it.</p>
@@ -133,7 +143,7 @@ export function CapturePanel(props: Props) {
                   <span>{item.line.speaker === 'agent' ? 'Apprentice' : 'Expert'}</span>
                   <time>{formatTs(item.line.ts_ms)}</time>
                 </div>
-                <p>{item.line.text}</p>
+                <p>{item.line.speaker === 'agent' ? spoken(item.line.text) : item.line.text}</p>
               </li>
             )
           }
@@ -211,10 +221,7 @@ export function CapturePanel(props: Props) {
             {busy === 'end' ? 'Ending…' : 'End task'}
           </button>
         </div>
-        <p className="cp-fine">
-          Pause stops capture and mutes the mic. Say “off the record” or use the button to delete the last {WINDOW_SEC}{' '}
-          seconds of screen and speech. End task starts the debrief.
-        </p>
+        <p className="cp-fine">Say “off the record” to delete the last {WINDOW_SEC} seconds. End task starts the debrief.</p>
       </footer>
     </aside>
   )

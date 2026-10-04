@@ -80,6 +80,8 @@ export function CapturePage() {
       panel={panel}
       panelSummary={summary(feed.events.length, feed.asks)}
       panelActivity={feed.events.length + feed.transcript.length + feed.asks.length}
+      showPanel={sessionId !== null}
+      autoPopOut={live}
     >
       <CaptureView capture={capture} />
       {live && (

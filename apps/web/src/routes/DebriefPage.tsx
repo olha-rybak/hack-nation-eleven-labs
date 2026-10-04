@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { SessionLayout } from '../components/SessionLayout'
+import { Transcript } from '../components/Transcript'
 import { finishDebrief } from '../debrief/api'
 import { stepFor, useDebriefVoice, type DebriefVoiceStatus } from '../debrief/useDebriefVoice'
 import { useDraft } from '../debrief/useDraft'
 import type { DebriefStatus, DraftWorkMap } from '../types/draft'
+import type { TranscriptLine } from '../types/session'
 import { frameUrl } from '../workmap/api'
 import '../debrief/debrief.css'
 
@@ -22,6 +24,7 @@ export function DebriefPage() {
   const { state, retry } = useDraft(sessionId)
   const [finishing, setFinishing] = useState(false)
   const [finishError, setFinishError] = useState<string | null>(null)
+  const [lines, setLines] = useState<TranscriptLine[]>([])
 
   async function finish() {
     setFinishing(true)
@@ -36,7 +39,12 @@ export function DebriefPage() {
   }
 
   return (
-    <SessionLayout sessionId={sessionId} panelTitle="Debrief">
+    <SessionLayout
+      sessionId={sessionId}
+      panelTitle="Debrief"
+      panel={<Transcript title="Debrief" lines={lines} empty="The debrief conversation appears here once you start it." />}
+      panelActivity={lines.length}
+    >
       {(state.status === 'loading' || state.status === 'building') && (
         <div className="placeholder" role="status">
           <h1>Preparing your debrief…</h1>
@@ -61,6 +69,7 @@ export function DebriefPage() {
           finishing={finishing}
           finishError={finishError}
           onFinish={finish}
+          onLines={setLines}
         />
       )}
     </SessionLayout>
@@ -74,10 +83,12 @@ interface DebriefProps {
   finishing: boolean
   finishError: string | null
   onFinish: () => void
+  onLines: (lines: TranscriptLine[]) => void
 }
 
-function Debrief({ sessionId, draft, initial, finishing, finishError, onFinish }: DebriefProps) {
+function Debrief({ sessionId, draft, initial, finishing, finishError, onFinish, onLines }: DebriefProps) {
   const voice = useDebriefVoice(sessionId, draft, initial, onFinish)
+  useEffect(() => onLines(voice.lines), [voice.lines, onLines])
   const { debrief, current } = voice
   const running = voice.status !== 'off' && voice.status !== 'error'
   const step = current && stepFor(draft, current)
