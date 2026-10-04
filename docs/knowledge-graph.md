@@ -42,11 +42,30 @@ Each line is `<question> "<latest quote>" (<expert>, <date>)`. The same list is 
 session's pause log with the `ask_now`, so you can see which facts were sent. Deciding whether a fact
 already answers a question is the agent's job (`prompts/interviewer/system.md`).
 
+## Rule review (T-205)
+
+After the debrief, the expert goes through every fact not agreed yet, one at a time
+(`/rules/:sessionId` in the web app). Each fact carries:
+
+- `rule`: the fact as one plain sentence ("If an RMA is under 100 euros, refund it."). Written by one
+  model call (`prompts/knowledge/rules.md`) for every unreviewed fact without one, the first time the
+  review list is loaded, then kept. A fact whose answers teach nothing gets "No rule: ...", so the
+  expert can delete it.
+- `agreed_at`: set when the expert agrees. `edited: true` when they rewrote the sentence first.
+
+A new quote on an agreed fact clears `agreed_at`: the expert reviews it again with the new words.
+Delete removes the fact from the graph; the same answer in a later session would create it again.
+
 ## API
 
 - `POST /knowledge/answers` body `{"session_id", "event_id", "question", "answer", "expert"?}` →
   the fact it created or added a quote to. 404 for an unknown session or event.
 - `GET /knowledge` → `{"facts": [...]}`.
+- `GET /knowledge/review` → `{"facts": [...]}` not agreed yet, each with `rule`. 502 if the model
+  call fails.
+- `POST /knowledge/facts/{id}/agree` body `{"rule"?}` → the fact. `rule` is the expert's rewrite;
+  leave it out to agree as written. 404 for an unknown fact, 422 for a blank rewrite.
+- `DELETE /knowledge/facts/{id}` → 204. 404 for an unknown fact.
 
 ## Not done yet
 
