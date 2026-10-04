@@ -109,8 +109,16 @@
   font-weight: bold;
 }
 
-.erp-nav-item.disabled {
-  color: #8a949d;
+.erp-nav-item:hover:not(.active) {
+  background: #e9edf1;
+}
+
+.erp-summary {
+  margin: 0 0 10px;
+}
+
+.erp .strong {
+  font-weight: bold;
 }
 
 .erp-main {
