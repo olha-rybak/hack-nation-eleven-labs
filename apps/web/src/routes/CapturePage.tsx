@@ -55,7 +55,7 @@ export function CapturePage() {
         if (state.status !== 'live') return
         const id = state.capture.sessionId
         await capture.stop()
-        navigate(`/map/${id}`)
+        navigate(`/debrief/${encodeURIComponent(id)}`)  // the debrief page builds the draft
       }}
     />
   )

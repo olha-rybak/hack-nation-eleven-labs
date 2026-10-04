@@ -16,7 +16,8 @@ npm run lint
 | Route | What |
 |---|---|
 | `/capture` | Expert shares their screen, apprentice asks why (T-101, T-102) |
-| `/map/:sessionId` | Work Map timeline and debrief (T-202) |
+| `/debrief/:sessionId` | Debrief: builds the draft on End task, lists the gaps (T-203) |
+| `/map/:sessionId` | Work Map timeline (T-202) |
 | `/teach/:workMapId` | Tutor overlay for the new hire (T-301) |
 | `/erp` | Fake ERP the expert shares, with INV-4471/4472/4473. Imports nothing from the apprentice side (T-100) |
 | `/erp?case=training` | Same ERP for the new hire, with the unseen case INV-4474 (T-303) |
