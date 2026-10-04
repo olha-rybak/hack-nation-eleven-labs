@@ -9,6 +9,8 @@ from datetime import date
 import pytest
 from fastapi.testclient import TestClient
 
+from apprentice.knowledge.rules import LlmRule, LlmRules
+from apprentice.llm.structured import StructuredLlmError
 from apprentice.main import app
 from apprentice.settings import get_settings
 
@@ -228,3 +230,106 @@ def test_second_session_sees_the_first_answer_and_a_repeat_merges(api):
         ("s1", "Over 5,000 it's capex, so 0400."),
         ("s2", "Capex, 0400, same as always."),
     ]
+
+
+# T-205: the expert goes through learned rules one by one, as plain sentences, and agrees,
+# edits or deletes each.
+
+
+class FakeLlm:
+    """Writes "Rule for <question>" for every fact it is shown."""
+
+    def __init__(self, fail: bool = False):
+        self.fail, self.prompts = fail, []
+
+    async def aclose(self):
+        pass
+
+    async def parse(self, system, user, schema):
+        self.prompts.append(user)
+        if self.fail:
+            raise StructuredLlmError("stopped: refusal")
+        ids = [line.split(":")[0] for line in user.split("\n") if line and not line[0].isspace()]
+        return LlmRules(rules=[LlmRule(fact=i, rule=f"Rule for {i}") for i in ids])
+
+
+@pytest.fixture
+def review(env):
+    with TestClient(app) as client:
+        app.state.map_llm = llm = FakeLlm()
+        yield client, llm
+
+
+def two_sessions(api) -> list[dict]:
+    """Three facts from two sessions: cost center, hold, and the same cost center again."""
+    api.post("/sessions", json={"session_id": "s1"})
+    api.post("/events?session=s1", json=[
+        open_invoice("o1", "4471", KESSLER_FIELDS),
+        edit("e1", "4471", "Cost center", "4711", "0400"),
+        edit("e2", "4471", "Status", "open", "held", ts_ms=3000),
+    ])  # fmt: skip
+    capex = answer(api, "s1", "e1", "Over 5,000 it's capex, so 0400.", question="Why 0400?")
+    hold = answer(api, "s1", "e2", "Kessler double-bills in December.", question="Why hold it?")
+    api.post("/sessions", json={"session_id": "s2"})
+    api.post("/events?session=s2", json=[
+        open_invoice("o2", "8810", {"Supplier": "Nordtec"}),
+        edit("e3", "8810", "Approver", "", "Second approver"),
+    ])  # fmt: skip
+    second = answer(api, "s2", "e3", "Czech invoices need a second approval.", question="Why?")
+    return [capex, hold, second]
+
+
+def test_two_sessions_agree_edit_and_delete(review):
+    """T-205 acceptance: one list from both sessions; agree, edit one, delete one."""
+    api, llm = review
+    capex, hold, second = two_sessions(api)
+
+    facts = api.get("/knowledge/review").json()["facts"]
+    assert {f["id"]: f["rule"] for f in facts} == {
+        f["id"]: f"Rule for {f['id']}" for f in (capex, hold, second)
+    }
+    assert {q["session_id"] for f in facts for q in f["quotes"]} == {"s1", "s2"}
+
+    assert api.post(f"/knowledge/facts/{capex['id']}/agree", json={}).status_code == 200
+    rewrite = {"rule": "  Czech invoices over 10,000 need a second approval. "}
+    r = api.post(f"/knowledge/facts/{second['id']}/agree", json=rewrite)
+    assert r.json()["rule"] == "Czech invoices over 10,000 need a second approval."
+    assert api.delete(f"/knowledge/facts/{hold['id']}").status_code == 204
+
+    assert api.get("/knowledge/review").json()["facts"] == []
+    graph = {f["id"]: f for f in api.get("/knowledge").json()["facts"]}
+    assert set(graph) == {capex["id"], second["id"]}
+    assert graph[capex["id"]]["rule"] == f"Rule for {capex['id']}"
+    assert graph[second["id"]]["edited"] is True
+    assert all(f["agreed_at"] for f in graph.values())
+    assert len(llm.prompts) == 1  # sentences are written once, not on every look
+
+
+def test_new_quote_sends_an_agreed_rule_back_for_review(review):
+    api, _ = review
+    capex, *_ = two_sessions(api)
+    api.get("/knowledge/review")
+    api.post(f"/knowledge/facts/{capex['id']}/agree", json={})
+    api.post("/sessions", json={"session_id": "s3"})
+    api.post("/events?session=s3", json=[
+        open_invoice("o3", "9001", KESSLER_FIELDS),
+        edit("e9", "9001", "Cost center", "4711", "0400"),
+    ])  # fmt: skip
+    answer(api, "s3", "e9", "Only over 10,000 now.")
+    ids = [f["id"] for f in api.get("/knowledge/review").json()["facts"]]
+    assert capex["id"] in ids
+
+
+def test_blank_edit_and_unknown_fact_are_rejected(review):
+    api, _ = review
+    capex, *_ = two_sessions(api)
+    assert api.post(f"/knowledge/facts/{capex['id']}/agree", json={"rule": "  "}).status_code == 422
+    assert api.post("/knowledge/facts/fnope/agree", json={}).status_code == 404
+    assert api.delete("/knowledge/facts/fnope").status_code == 404
+
+
+def test_failed_rule_writing_is_a_502(review):
+    api, _ = review
+    two_sessions(api)
+    app.state.map_llm = FakeLlm(fail=True)
+    assert api.get("/knowledge/review").status_code == 502

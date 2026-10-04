@@ -2,7 +2,7 @@
 // Field names stay snake_case because this is the JSON wire format.
 // Change both files in the same PR.
 
-export type QuoteSource = 'live_question' | 'debrief' | 'narration'
+export type QuoteSource = 'live_question' | 'debrief' | 'narration' | 'earlier_session'
 
 export interface Quote {
   text: string

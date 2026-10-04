@@ -17,6 +17,7 @@ const sourceLabel: Record<Quote['source'], string> = {
   live_question: 'live question',
   debrief: 'debrief',
   narration: 'while working',
+  earlier_session: 'earlier session',
 }
 
 function expertName(map: WorkMap): string {
@@ -29,10 +30,10 @@ function governs(guardrail: Guardrail, step: Step): boolean {
   return step.guardrail_ids.includes(guardrail.id) || step.index === guardrail.step_index
 }
 
-// A debrief quote was spoken after the task, so its own timestamp shows the end screen.
-// Jump to the moment it is about instead.
+// A debrief or earlier-session quote was not spoken at this moment of the task, so its own timestamp
+// shows the wrong screen. Jump to the moment it is about instead.
 function quoteMoment(quote: Quote, aboutTs: number): number {
-  return quote.source === 'debrief' ? aboutTs : quote.ts_ms
+  return quote.source === 'debrief' || quote.source === 'earlier_session' ? aboutTs : quote.ts_ms
 }
 
 const formatConfirmed = (iso: string) => {
