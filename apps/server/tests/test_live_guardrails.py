@@ -14,6 +14,7 @@ from apprentice.session.hub import Hub
 from apprentice.session.routes import router as session_router
 from apprentice.session.store import SessionStore
 from apprentice.settings import Settings
+from apprentice.workmap.routes import router as workmap_router
 
 FIXTURE = Path(__file__).parent / "fixtures" / "workmap_guardrails.json"
 FRAME = "frames/0000001000.jpg"
@@ -146,6 +147,7 @@ def app(tmp_path):
     app = FastAPI()
     app.include_router(session_router)
     app.include_router(interviewer_router)
+    app.include_router(workmap_router)
     app.state.store = SessionStore(tmp_path)
     app.state.hub = Hub()
     app.state.redactor = Redactor(app.state.store, Settings())

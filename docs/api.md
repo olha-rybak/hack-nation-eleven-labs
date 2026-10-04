@@ -12,7 +12,7 @@ The vision model runs separately in llama-server on `:8080`; see `.env.example`.
   Optional: `/ingest/frame` auto-creates an unknown session.
   A `tutor` session needs `work_map_id`, the expert session holding the confirmed `workmap.json`
   (422 missing, 404 no map, 409 unconfirmed); its events then run through the guardrails live (T-300).
-- `GET /sessions/{id}/workmap` → the confirmed Work Map stored in that session, 404 until there is one.
+- `GET /sessions/{id}/workmap` → the session's `workmap.json` (written by `POST /sessions/{id}/debrief/finish`), 404 until there is one.
 - `GET /sessions/{id}/guardrails` → a tutor session's `guardrail_hit` / `guardrail_resolved` log.
 - `GET /sessions/{id}` → meta. `GET /sessions/{id}/events`, `GET /sessions/{id}/transcript`.
 - `POST /sessions/{id}/transcript` body `{"speaker", "ts_ms", "text"}` → appended and broadcast.

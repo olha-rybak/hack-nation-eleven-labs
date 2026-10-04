@@ -7,7 +7,7 @@ from pydantic import BaseModel, ValidationError
 from apprentice import settings
 from apprentice.capture.events import Event
 from apprentice.guardrails.engine import NotConfirmed
-from apprentice.guardrails.live import WORKMAP_FILE, NoWorkMap, load_workmap
+from apprentice.guardrails.live import NoWorkMap, load_workmap
 from apprentice.privacy.redactor import Redactor
 from apprentice.session.hub import Hub
 from apprentice.session.store import SessionStore
@@ -87,16 +87,6 @@ async def create_session(
     if extra and (live := getattr(request.app.state, "guardrails", None)):
         live.attach(sid, body.work_map_id)
     return {"session_id": sid}
-
-
-@router.get("/sessions/{session_id}/workmap")
-async def get_workmap(session_id: str, store: SessionStore = Depends(get_store)) -> dict:
-    """The confirmed Work Map stored in this (expert) session, 404 until there is one."""
-    _require(store, session_id)
-    try:
-        return load_workmap(store, session_id).model_dump(mode="json")
-    except NoWorkMap:
-        raise HTTPException(404, f"no {WORKMAP_FILE} in this session") from None
 
 
 @router.get("/sessions/{session_id}/guardrails")
