@@ -4,6 +4,7 @@
 import type { GuardrailCheck, GuardrailKind, Quote } from './workmap'
 
 export type GapKind = 'no_reason' | 'no_threshold' | 'unseen_branch' | 'inconsistency'
+export type GapStatus = 'open' | 'answered' | 'declined'
 
 export interface DraftStep {
   index: number
@@ -35,6 +36,8 @@ export interface Gap {
   question: string // one spoken sentence the debrief can ask as is
   why_it_matters: string
   importance: number // 1-5
+  status: GapStatus
+  answer: Quote | null // the expert's debrief answer, once answered
 }
 
 export interface DraftWorkMap {
