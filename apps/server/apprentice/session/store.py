@@ -133,6 +133,14 @@ class SessionStore:
     def transcript(self, session_id: str) -> list[dict]:
         return self._read(session_id, "transcript.jsonl")
 
+    # The debrief's spoken lines. Kept apart from transcript.jsonl, the capture conversation that
+    # the draft is built from; the debrief's answers reach the draft through /debrief/answer.
+    def append_debrief_line(self, session_id: str, line: dict) -> None:
+        self._append(session_id, "debrief.jsonl", line)
+
+    def debrief_transcript(self, session_id: str) -> list[dict]:
+        return self._read(session_id, "debrief.jsonl")
+
     def append_pause_log(self, session_id: str, entry: dict) -> None:
         """Pause-detector decisions and near-misses, for tuning thresholds (T-104)."""
         self._append(session_id, "pause.jsonl", entry)

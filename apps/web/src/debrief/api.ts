@@ -1,4 +1,5 @@
 import type { DebriefStatus, DraftWorkMap } from '../types/draft'
+import type { Speaker, TranscriptLine } from '../types/session'
 import type { WorkMap } from '../types/workmap'
 import { api } from '../lib/api'
 
@@ -7,6 +8,7 @@ import { api } from '../lib/api'
 //   POST /api/sessions/:id/workmap/draft -> build it from the session log (~10 s), 502 if the LLM fails
 //   GET  /api/sessions/:id/debrief       -> the gaps still to ask, in order, and whether it is done
 //   POST /api/sessions/:id/debrief/finish -> save the Work Map from what was explained, 409 if nothing was
+//   GET/POST /api/sessions/:id/debrief/transcript -> what was said in the debrief, apart from capture
 
 function session(sessionId: string) {
   return api(`/sessions/${encodeURIComponent(sessionId)}`)
@@ -64,4 +66,21 @@ export async function answerGap(sessionId: string, body: DebriefAnswerBody): Pro
     body: JSON.stringify(body),
   })
   if (!res.ok && res.status !== 409) throw new Error(`Saving the answer failed (${await detail(res)})`)
+}
+
+/** What was said in the debrief so far; empty if it has not started or the server is down. */
+export async function fetchDebriefTranscript(sessionId: string, signal?: AbortSignal): Promise<TranscriptLine[]> {
+  const res = await fetch(`${session(sessionId)}/debrief/transcript`, { signal }).catch(() => null)
+  if (!res?.ok) return []
+  const lines = (await res.json()) as Omit<TranscriptLine, 'id'>[]
+  return lines.map((l, i) => ({ ...l, id: `debrief-${i}` }))
+}
+
+export async function postDebriefLine(sessionId: string, line: { speaker: Speaker; text: string; ts_ms: number }): Promise<void> {
+  const res = await fetch(`${session(sessionId)}/debrief/transcript`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(line),
+  })
+  if (!res.ok) throw new Error(`Saving the debrief line failed (${await detail(res)})`)
 }

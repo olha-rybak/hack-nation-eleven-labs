@@ -54,3 +54,12 @@ def test_two_ws_clients_identical(app):
         m1, m2 = w1.receive_json(), w2.receive_json()
         assert m1 == m2 == {"type": "transcript", "data": body}
     assert c.get(f"/sessions/{sid}/transcript").json() == [body]
+
+
+def test_debrief_lines_kept_apart_from_capture_transcript(app):
+    c = TestClient(app)
+    sid = c.post("/sessions").json()["session_id"]
+    body = {"speaker": "agent", "ts_ms": 1200, "text": "Why did you pick Replacement?"}
+    assert c.post(f"/sessions/{sid}/debrief/transcript", json=body).status_code == 200
+    assert c.get(f"/sessions/{sid}/debrief/transcript").json() == [body]
+    assert c.get(f"/sessions/{sid}/transcript").json() == []
