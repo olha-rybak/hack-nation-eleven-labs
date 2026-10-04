@@ -1,4 +1,4 @@
-// The capture tab sits in the background while the expert works in the ERP, and browsers
+// The capture tab sits in the background while the expert works in the shared app, and browsers
 // throttle timers in hidden tabs (Chrome down to once a minute after a few minutes).
 // Timers in a worker are not throttled that way, so the sampling clock lives here.
 

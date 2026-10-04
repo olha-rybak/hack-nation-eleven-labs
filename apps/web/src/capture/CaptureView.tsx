@@ -90,7 +90,7 @@ export function CaptureView({ capture }: { capture: ReturnType<typeof useScreenC
 
       <ol className="cap-steps">
         <li>
-          <strong>Open the app</strong> you work in, for the demo the ERP in a new tab.
+          <strong>Open the app</strong> you work in, for the demo the returns desk in a new tab.
         </li>
         <li>
           <strong>Share that tab</strong> when the browser asks. Only the tab is recorded.
@@ -111,8 +111,8 @@ export function CaptureView({ capture }: { capture: ReturnType<typeof useScreenC
         <button type="button" className="button" onClick={start} disabled={state.status === 'requesting'}>
           {state.status === 'requesting' ? 'Waiting for the browser…' : 'Share screen'}
         </button>
-        <a className="button ghost" href="/erp" target="_blank" rel="noreferrer">
-          Open the ERP
+        <a className="button ghost" href="/shop" target="_blank" rel="noreferrer">
+          Open the returns desk
         </a>
       </div>
     </div>

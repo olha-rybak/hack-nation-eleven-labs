@@ -1,4 +1,4 @@
-import fixture from '../../../server/tests/fixtures/workmap_invoices.json'
+import fixture from '../../../server/tests/fixtures/workmap_returns.json'
 import type { WorkMap } from '../types/workmap'
 
 // Server routes (T-203/T-105):
@@ -18,7 +18,7 @@ export async function fetchWorkMap(sessionId: string, signal?: AbortSignal): Pro
   return (await res.json()) as WorkMap
 }
 
-// Mock frames are screenshots of the fake ERP, one per screen moment in the fixture.
+// Mock frames are screenshots of the returns desk, one per screen moment in the fixture.
 const mockFrames = [
   ...new Set([...fixture.steps.map((s) => s.frame_ts), ...fixture.guardrails.map((g) => g.frame_ts)]),
 ].sort((a, b) => a - b)

@@ -1,4 +1,4 @@
-/* Returns desk: a modern customer-service admin. Scoped to .shop so the ERP keeps its own look. */
+/* Returns desk: a modern customer-service admin. Scoped to .shop. */
 
 .shop {
   --bg: #f6f7f9;
