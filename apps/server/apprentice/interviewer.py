@@ -42,10 +42,14 @@ async def add_events(
         events = [Event.model_validate(e) for e in (body if isinstance(body, list) else [body])]
     except ValidationError as e:
         raise HTTPException(422, str(e)) from None
+    accepted = []
     for ev in events:
         redacted = await asyncio.to_thread(redactor.event, session, ev.model_dump())
         store.append_event(session, redacted)
         await hub.publish(session, "event", redacted)
+        accepted.append(redacted)
+    if live := getattr(request.app.state, "guardrails", None):
+        await live.on_events(session, accepted)  # scripted event streams reach the tutor too
     request.app.state.pause.detector(session).on_screen_change(request.app.state.pause.clock())
     return {"events": len(store.events(session))}
 

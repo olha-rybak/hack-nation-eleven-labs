@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
 from apprentice import prompts
@@ -48,10 +48,12 @@ class VisionService:
         settings: Settings,
         redactor: Redactor,
         on_event: Callable[[str], None] | None = None,
+        on_events: Callable[[str, list[dict]], Awaitable[None]] | None = None,
     ):
         self.llm, self.store, self.hub, self.settings = llm, store, hub, settings
         self.redactor = redactor
         self.on_event = on_event  # e.g. pause detector: an accepted event is screen activity
+        self.on_events = on_events  # e.g. live guardrails: evaluate each accepted event
         self._sessions: dict[str, _SessionState] = {}
         self.brief: str | None = None  # environment brief from T-109, once it exists
 
@@ -84,6 +86,8 @@ class VisionService:
                 await self.hub.publish(session_id, "event", ev.model_dump())
             if events and self.on_event:
                 self.on_event(session_id)
+            if events and self.on_events:
+                await self.on_events(session_id, [ev.model_dump() for ev in events])
 
     async def extract(self, session_id: str, prev: Frame, cur: Frame) -> list[Event]:
         recent = [Event.model_validate(e) for e in self.store.events(session_id)]

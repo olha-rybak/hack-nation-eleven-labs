@@ -6,6 +6,8 @@ from pydantic import BaseModel, ValidationError
 
 from apprentice import settings
 from apprentice.capture.events import Event
+from apprentice.guardrails.engine import NotConfirmed
+from apprentice.guardrails.live import WORKMAP_FILE, NoWorkMap, load_workmap
 from apprentice.privacy.redactor import Redactor
 from apprentice.session.hub import Hub
 from apprentice.session.store import SessionStore
@@ -28,6 +30,7 @@ def get_hub(request: Request) -> Hub:
 class CreateBody(BaseModel):
     session_id: str | None = None
     role: str = "interviewer"
+    work_map_id: str | None = None  # tutor: the expert session whose confirmed Work Map it teaches
 
 
 class TranscriptBody(BaseModel):
@@ -60,14 +63,47 @@ def _require(store: SessionStore, session_id: str) -> None:
 
 @router.post("/sessions")
 async def create_session(
-    body: CreateBody | None = None, store: SessionStore = Depends(get_store)
+    request: Request, body: CreateBody | None = None, store: SessionStore = Depends(get_store)
 ) -> dict:
     body = body or CreateBody()
+    extra = None
+    if body.role == "tutor":
+        if not body.work_map_id:
+            raise HTTPException(422, "a tutor session needs work_map_id")
+        _require(store, body.work_map_id)
+        try:
+            # Only a confirmed map may teach (T-204); check before the session exists.
+            if load_workmap(store, body.work_map_id).confirmed_at is None:
+                raise NotConfirmed(body.work_map_id)
+        except NoWorkMap:
+            raise HTTPException(404, "that session has no Work Map yet") from None
+        except NotConfirmed:
+            raise HTTPException(409, "the Work Map is not confirmed") from None
+        extra = {"work_map_id": body.work_map_id}
     try:
-        sid = store.create(body.session_id, body.role)
+        sid = store.create(body.session_id, body.role, extra)
     except ValueError:
         raise HTTPException(422, "invalid session id") from None
+    if extra and (live := getattr(request.app.state, "guardrails", None)):
+        live.attach(sid, body.work_map_id)
     return {"session_id": sid}
+
+
+@router.get("/sessions/{session_id}/workmap")
+async def get_workmap(session_id: str, store: SessionStore = Depends(get_store)) -> dict:
+    """The confirmed Work Map stored in this (expert) session, 404 until there is one."""
+    _require(store, session_id)
+    try:
+        return load_workmap(store, session_id).model_dump(mode="json")
+    except NoWorkMap:
+        raise HTTPException(404, f"no {WORKMAP_FILE} in this session") from None
+
+
+@router.get("/sessions/{session_id}/guardrails")
+async def get_guardrails(session_id: str, store: SessionStore = Depends(get_store)) -> list[dict]:
+    """Guardrail hits and resolutions of a tutor session, oldest first."""
+    _require(store, session_id)
+    return store.guardrails(session_id)
 
 
 @router.get("/sessions/{session_id}")
@@ -183,6 +219,7 @@ async def session_ws(websocket: WebSocket, session_id: str) -> None:
                 "data": {
                     "events": store.events(session_id),
                     "transcript": store.transcript(session_id),
+                    "guardrails": store.guardrails(session_id),
                 },
             }
         )
