@@ -1,9 +1,10 @@
-import { Link, NavLink, Outlet } from 'react-router'
+import { Link, NavLink, Outlet, useLocation } from 'react-router'
+import { lastSession } from '../lib/lastSession'
 import { ThemeToggle } from './ThemeToggle'
 
-const DEMO_ID = 'demo-brandt'
-
 export function Shell() {
+  useLocation() // re-read the last session on every navigation
+  const session = encodeURIComponent(lastSession())
   return (
     <div className="shell">
       <header className="globalnav">
@@ -12,9 +13,9 @@ export function Shell() {
         </Link>
         <nav aria-label="Modules">
           <NavLink to="/capture">Capture</NavLink>
-          <NavLink to={`/map/${DEMO_ID}`}>Work Map</NavLink>
-          <NavLink to={`/vault/${DEMO_ID}`}>Vault</NavLink>
-          <NavLink to={`/teach/${DEMO_ID}`}>Teach</NavLink>
+          <NavLink to={`/map/${session}`}>Work Map</NavLink>
+          <NavLink to={`/vault/${session}`}>Vault</NavLink>
+          <NavLink to={`/teach/${session}`}>Teach</NavLink>
         </nav>
         <div className="globalnav-end">
           <a className="globalnav-app" href="/shop" target="_blank" rel="noreferrer">

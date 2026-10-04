@@ -4,6 +4,7 @@ import { useInterviewer, type InterviewerStatus } from '../capture/useInterviewe
 import { useScreenCapture } from '../capture/useScreenCapture'
 import { SessionLayout } from '../components/SessionLayout'
 import { CapturePanel } from '../session/CapturePanel'
+import { rememberSession } from '../lib/lastSession'
 import { useSessionFeed } from '../session/useSessionFeed'
 
 function summary(events: number, asks: { question_index: number; budget: number }[]) {
@@ -65,6 +66,7 @@ export function CapturePage() {
       onEndTask={async () => {
         if (state.status !== 'live') return
         const id = state.capture.sessionId
+        rememberSession(id)
         await capture.stop()
         navigate(`/debrief/${encodeURIComponent(id)}`)  // the debrief page builds the draft
       }}

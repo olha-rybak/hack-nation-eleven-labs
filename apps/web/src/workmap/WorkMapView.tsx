@@ -73,6 +73,7 @@ export function WorkMapView({ sessionId, map }: { sessionId: string; map: WorkMa
         <div className="wm-subnav-links">
           <a href="#wm-guardrails">Guardrails</a>
           <a href="#wm-steps">Steps</a>
+          <Link to={`/vault/${encodeURIComponent(sessionId)}`}>Vault</Link>
           <Link className="button compact" to={`/teach/${map.id}`}>
             Teach a new hire
           </Link>
