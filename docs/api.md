@@ -13,6 +13,9 @@ The vision model runs separately in llama-server on `:8080`; see `.env.example`.
   A `tutor` session needs `work_map_id`, the expert session holding the confirmed `workmap.json`
   (422 missing, 404 no map, 409 unconfirmed); its events then run through the guardrails live (T-300).
 - `GET /sessions/{id}/workmap` → the session's `workmap.json` (written by `POST /sessions/{id}/debrief/finish`), 404 until there is one.
+- `POST /sessions/{id}/workmap/confirm` → the Work Map with `confirmed_at` stamped (T-204), 404 without a map.
+  Confirming twice keeps the first stamp. A confirmed map is frozen: `debrief/finish` then answers 409.
+  Only a confirmed map can teach (tutor sessions, the report).
 - `GET /sessions/{id}/guardrails` → a tutor session's `guardrail_hit` / `guardrail_resolved` log.
 - `GET /sessions/{id}` → meta. `GET /sessions/{id}/events`, `GET /sessions/{id}/transcript`.
 - `POST /sessions/{id}/transcript` body `{"speaker", "ts_ms", "text"}` → appended and broadcast.

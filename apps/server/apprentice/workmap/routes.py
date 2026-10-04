@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import date
+from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field, model_validator
@@ -80,6 +80,20 @@ def get_workmap(session_id: str, request: Request) -> WorkMap:
     return WorkMap.model_validate(json.loads(path.read_text(encoding="utf-8")))
 
 
+@router.post("/sessions/{session_id}/workmap/confirm")
+def confirm_workmap(session_id: str, request: Request) -> WorkMap:
+    """The expert confirms the Work Map (T-204): stamp `confirmed_at` and freeze it. Only a
+    confirmed map can teach (T-300, T-303). Confirming twice keeps the first stamp."""
+    path = _session_dir(request, session_id) / WORKMAP_FILE
+    if not path.is_file():
+        raise HTTPException(404, "no Work Map yet; it is made when the debrief finishes")
+    workmap = WorkMap.model_validate(json.loads(path.read_text(encoding="utf-8")))
+    if workmap.confirmed_at is None:
+        workmap.confirmed_at = datetime.now(UTC)
+        path.write_text(workmap.model_dump_json(indent=2), encoding="utf-8")
+    return workmap
+
+
 @router.get("/sessions/{session_id}/debrief")
 async def debrief_status(session_id: str, request: Request) -> debrief.DebriefStatus:
     """The next gap to ask, how many are left, and whether the debrief is done."""
@@ -99,13 +113,14 @@ class FinishedDebrief(BaseModel):
 async def finish_debrief(session_id: str, request: Request) -> FinishedDebrief:
     """End the debrief, whether it is done or the expert stopped it, and save the Work Map."""
     draft = _load_draft(request, session_id)
+    path = _session_dir(request, session_id) / WORKMAP_FILE
+    if path.is_file() and json.loads(path.read_text(encoding="utf-8")).get("confirmed_at"):
+        raise HTTPException(409, "the Work Map is confirmed and frozen; it cannot be rebuilt")
     try:
         workmap, left_out = debrief.finish(draft)
     except debrief.NothingExplained as e:
         raise HTTPException(409, str(e)) from None
-    (_session_dir(request, session_id) / WORKMAP_FILE).write_text(
-        workmap.model_dump_json(indent=2), encoding="utf-8"
-    )
+    path.write_text(workmap.model_dump_json(indent=2), encoding="utf-8")
     return FinishedDebrief(workmap=workmap, left_out=left_out)
 
 
