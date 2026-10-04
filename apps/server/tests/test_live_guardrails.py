@@ -14,6 +14,7 @@ from apprentice.session.hub import Hub
 from apprentice.session.routes import router as session_router
 from apprentice.session.store import SessionStore
 from apprentice.settings import Settings
+from apprentice.teach.routes import router as teach_router
 
 FIXTURE = Path(__file__).parent / "fixtures" / "workmap_guardrails.json"
 FRAME = "frames/0000001000.jpg"
@@ -188,6 +189,24 @@ def test_scripted_stream_reaches_the_websocket_before_any_save(app):
     assert hit["guardrail_id"] == "g-capex-limit" and hit["source_session_id"] == source
     assert not any(e["kind"] == "save" for e in c.get(f"/sessions/{tutor}/events").json())
     assert any(g["type"] == "guardrail_hit" for g in c.get(f"/sessions/{tutor}/guardrails").json())
+
+
+def test_report_sees_a_wrong_value_fixed_under_the_same_event_id(app):
+    """Vision merges typing in one field under one id; the report must replay the history."""
+    app.include_router(teach_router)
+    c = TestClient(app)
+    expert = expert_session(app.state.store)
+    tutor = c.post("/sessions", json={"role": "tutor", "work_map_id": expert}).json()["session_id"]
+    c.post(f"/events?session={tutor}", json=[
+        opened("invoice 4471", Amount="EUR 7,200.00", **{"Asset number": "AS-1"}),
+        edit("invoice 4471", "Cost center", "", "4711 - Opex general", "e1", 2000),
+        edit("invoice 4471", "Cost center", "4711 - Opex general", "0400 - Capex", "e1", 3000),
+        {"id": "s1", "ts_ms": 4000, "kind": "save", "entity": "invoice 4471",
+         "confidence": 0.9, "frame_ref": FRAME},
+    ])  # fmt: skip
+    report = c.get(f"/sessions/{tutor}/report", params={"workmap_session": expert}).json()
+    [outcome] = [g for g in report["guardrails"] if g["guardrail_id"] == "g-capex-limit"]
+    assert outcome["resolved"] and "0400" in outcome["resolution"]
 
 
 def test_off_the_record_removes_guardrail_entries_in_the_window(app):
