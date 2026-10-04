@@ -8,6 +8,7 @@ import { DebriefPage } from './routes/DebriefPage'
 import { MapPage } from './routes/MapPage'
 import { NotFound } from './routes/NotFound'
 import { TeachPage } from './routes/TeachPage'
+import { VaultPage } from './routes/VaultPage'
 import { ShopApp } from './shop/ShopApp'
 import './styles/global.css'
 
@@ -23,6 +24,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="debrief/:sessionId" element={<DebriefPage />} />
           <Route path="map/:sessionId" element={<MapPage />} />
           <Route path="teach/:workMapId" element={<TeachPage />} />
+          <Route path="vault/:sessionId" element={<VaultPage />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
