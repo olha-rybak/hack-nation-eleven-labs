@@ -21,7 +21,7 @@ Guardrail(id, kind: Literal["limit","exception","stop_and_ask","never_do"],
           reason: Quote, step_index: int,
           check: GuardrailCheck | None)   # machine-evaluable form, see T-300
 
-Quote(text, speaker, ts_ms, source: Literal["live_question","debrief","narration"])
+Quote(text, speaker, ts_ms, source: Literal["live_question","debrief","narration","earlier_session"])
 ```
 
 Enforce in validation, not by convention: **every** `Step` and **every** `Guardrail` carries a

@@ -52,9 +52,20 @@ def test_page_prompts_and_fixtures_are_served(api):
     assert api.get("/fixtures/events.json").json() == FIXTURE
 
 
-def test_config_returns_agent_id_from_settings(api, monkeypatch):
+def test_config_returns_agent_ids_from_settings(api, monkeypatch):
     configured = Settings(
-        ELEVENLABS_INTERVIEWER_AGENT_ID="agent_test", ELEVENLABS_TUTOR_AGENT_ID="tutor_test"
+        ELEVENLABS_INTERVIEWER_AGENT_ID="agent_test",
+        ELEVENLABS_DEBRIEF_AGENT_ID="",
+        ELEVENLABS_TUTOR_AGENT_ID="tutor_test",
     )
     monkeypatch.setattr("apprentice.interviewer.get_settings", lambda: configured)
-    assert api.get("/config").json() == {"agent_id": "agent_test", "tutor_agent_id": "tutor_test"}
+    assert api.get("/config").json() == {
+        "agent_id": "agent_test",
+        "debrief_agent_id": "agent_test",
+        "debrief_prompt_override": True,
+        "tutor_agent_id": "tutor_test",
+    }
+    configured.ELEVENLABS_DEBRIEF_AGENT_ID = "agent_debrief"
+    debrief = api.get("/config").json()
+    assert debrief["debrief_agent_id"] == "agent_debrief" and not debrief["debrief_prompt_override"]
+    assert "NEXT_GAP" in api.get("/prompts/debrief/system.md").text

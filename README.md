@@ -36,7 +36,7 @@ the build board. Copy `.env.example` to `.env` first.
 ## Layout
 
 ```
-apps/web/            Vite + React + TS — capture UI, Work Map timeline, tutor, fake ERP
+apps/web/            Vite + React + TS — capture UI, Work Map timeline, tutor, returns desk
 apps/server/         FastAPI — vision loop, LLM proxy, session store, Work Map, export
 config/environment/  What the model reads about the app before a session starts
 docs/tickets/        The build board

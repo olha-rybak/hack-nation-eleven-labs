@@ -1,9 +1,9 @@
-// The returns desk is a second app the expert can share, next to the ERP. Like the ERP it must not
+// The returns desk is the app the expert shares. It must not
 // import anything from the apprentice side: the apprentice only ever sees it through screen pixels.
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router'
-import { formatDate, formatDateTime, formatMoney } from '../erp/format'
+import { formatDate, formatDateTime, formatMoney } from './format'
 import {
   RESTOCKING_FEE,
   RETURN_WINDOW_DAYS,
