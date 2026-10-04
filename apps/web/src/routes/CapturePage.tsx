@@ -19,7 +19,7 @@ const WINDOW_SEC = Number(import.meta.env.VITE_OFF_THE_RECORD_WINDOW_SEC) || 30
 const voiceText: Record<InterviewerStatus, string> = {
   off: 'Voice off',
   connecting: 'Voice connecting…',
-  listening: 'Apprentice listening',
+  listening: 'Apprentice watching, mic off',
   speaking: 'Apprentice speaking',
   error: 'Voice failed',
 }
@@ -84,7 +84,7 @@ export function CapturePage() {
       <CaptureView capture={capture} />
       {live && (
         <p className="cap-hint" role="status">
-          {paused ? 'Recording paused' : voiceText[voice.status]}
+          {paused ? 'Recording paused' : voice.micOpen ? 'Mic on: answer the question' : voiceText[voice.status]}
           {!paused && voice.error && ` (${voice.error})`}
         </p>
       )}
