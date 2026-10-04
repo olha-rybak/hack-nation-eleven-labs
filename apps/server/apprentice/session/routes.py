@@ -130,6 +130,28 @@ async def post_transcript(
     return line
 
 
+@router.get("/sessions/{session_id}/debrief/transcript")
+async def get_debrief_transcript(
+    session_id: str, store: SessionStore = Depends(get_store)
+) -> list[dict]:
+    _require(store, session_id)
+    return store.debrief_transcript(session_id)
+
+
+@router.post("/sessions/{session_id}/debrief/transcript")
+async def post_debrief_line(
+    session_id: str,
+    body: TranscriptBody,
+    store: SessionStore = Depends(get_store),
+    redactor: Redactor = Depends(get_redactor),
+) -> dict:
+    _require(store, session_id)
+    line = body.model_dump()
+    line["text"] = await asyncio.to_thread(redactor.text, session_id, line["text"])
+    store.append_debrief_line(session_id, line)
+    return line
+
+
 @router.get("/sessions/{session_id}/frames/{name}")
 async def get_frame(
     session_id: str, name: str, store: SessionStore = Depends(get_store)

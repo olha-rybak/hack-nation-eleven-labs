@@ -472,6 +472,7 @@ body.v-resizing {
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
+  text-decoration: none;
   transition:
     filter 150ms ease,
     transform 120ms ease,

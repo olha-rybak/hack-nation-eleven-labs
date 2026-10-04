@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 import { SessionLayout } from '../components/SessionLayout'
+import { Transcript } from '../components/Transcript'
+import { fetchDebriefTranscript } from '../debrief/api'
 import { agreeRule, confirmWorkMap, deleteRule, fetchRulesToReview } from '../rules/api'
 import { fetchWorkMap } from '../workmap/api'
 import type { Fact } from '../types/knowledge'
+import type { TranscriptLine } from '../types/session'
 import '../rules/rules.css'
 
 type LoadState = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; facts: Fact[] }
@@ -14,6 +17,13 @@ export function RulesPage() {
   const [attempt, setAttempt] = useState(0)
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [done, setDone] = useState(0)
+  // The rules come out of the debrief, so its conversation sits beside them.
+  const [debriefLines, setDebriefLines] = useState<TranscriptLine[] | null>(null)
+  useEffect(() => {
+    const controller = new AbortController()
+    fetchDebriefTranscript(sessionId, controller.signal).then((l) => !controller.signal.aborted && setDebriefLines(l))
+    return () => controller.abort()
+  }, [sessionId])
   // Every debrief question skipped: nothing was explained, so no Work Map was saved.
   const noWorkMap = (useLocation().state as { noWorkMap?: boolean } | null)?.noWorkMap === true
   const nextPath = noWorkMap ? '/capture' : `/vault/${encodeURIComponent(sessionId)}`
@@ -32,7 +42,13 @@ export function RulesPage() {
   const current = facts[done]
 
   return (
-    <SessionLayout sessionId={sessionId} panelTitle="Rules">
+    <SessionLayout
+      sessionId={sessionId}
+      panelTitle={debriefLines?.length ? 'Debrief' : 'Capture'}
+      panel={
+        debriefLines?.length ? <Transcript title="Debrief" lines={debriefLines} empty="" /> : undefined
+      }
+    >
       {state.status === 'loading' && (
         <div className="placeholder" role="status">
           <h1>Writing up the rules…</h1>

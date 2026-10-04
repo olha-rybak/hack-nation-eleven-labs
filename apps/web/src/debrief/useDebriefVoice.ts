@@ -4,7 +4,7 @@ import { MicGate } from '../lib/micGate'
 import { spoken } from '../lib/spoken'
 import type { DebriefStatus, DraftStep, DraftWorkMap, Gap } from '../types/draft'
 import type { TranscriptLine } from '../types/session'
-import { answerGap, fetchDebrief } from './api'
+import { answerGap, fetchDebrief, fetchDebriefTranscript, postDebriefLine } from './api'
 import { DebriefTurns, nextGapText } from './turns'
 import { api } from '../lib/api'
 
@@ -32,6 +32,18 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
   // What is said in the debrief, for the panel. It is not posted to the session transcript,
   // which holds the capture conversation the Work Map is built from.
   const [lines, setLines] = useState<TranscriptLine[]>([])
+  // Reopening the debrief shows what was said before; new lines continue its clock.
+  useEffect(() => {
+    const controller = new AbortController()
+    fetchDebriefTranscript(sessionId, controller.signal).then((saved) => {
+      if (!controller.signal.aborted) setLines((l) => (l.length ? l : saved))
+    })
+    return () => controller.abort()
+  }, [sessionId])
+  const linesRef = useRef(lines)
+  useEffect(() => {
+    linesRef.current = lines
+  }, [lines])
   const conversation = useRef<Conversation | null>(null)
   const asking = useRef<Gap | null>(null)
   const skipRef = useRef<() => void>(() => {})
@@ -43,6 +55,7 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
     setError(null)
     const turns = new DebriefTurns()
     const t0 = performance.now()
+    const said = (linesRef.current.at(-1)?.ts_ms ?? -1000) + 1000
     // Debrief quotes are timed after the task: the last screen moment plus time into the debrief.
     const base = Math.max(0, ...draft.steps.map((s) => s.frame_ts))
     const now = () => base + Math.round(performance.now() - t0)
@@ -121,8 +134,10 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
         },
         onMessage: ({ message, role }) => {
           const speaker = role === 'agent' ? 'agent' : 'expert'
-          const ts_ms = Math.round(performance.now() - t0)
+          const ts_ms = said + Math.round(performance.now() - t0)
           setLines((l) => [...l, { id: `debrief-${l.length}`, speaker, text: message, ts_ms }])
+          // Kept for the Rules page and a reopened debrief; the conversation goes on if it fails.
+          postDebriefLine(sessionId, { speaker, text: message, ts_ms }).catch(() => {})
           if (role !== 'agent') {
             gate.close()
             applyMic()

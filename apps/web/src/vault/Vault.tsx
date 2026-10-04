@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router'
+import { DEMO_SESSION } from '../lib/lastSession'
 import { GraphView } from './GraphView'
 import { frameUrl } from '../workmap/api'
 import { fileName, frameName, INDEX_ID, notePath, toMarkdown, type Note } from './notes'
@@ -136,6 +138,11 @@ export function Vault({ sessionId, notes, demo }: Props) {
                 <span className="v-badge" title="No Work Map for this session yet, showing the returns desk example">
                   demo data
                 </span>
+              )}
+              {demo && sessionId !== DEMO_SESSION && (
+                <Link className="v-btn ghost" to={`/debrief/${encodeURIComponent(sessionId)}`}>
+                  Finish the debrief
+                </Link>
               )}
               <button type="button" className="v-btn ghost" onClick={() => setSwitcher(true)}>
                 Jump to <kbd>{shortcutHint}</kbd>
