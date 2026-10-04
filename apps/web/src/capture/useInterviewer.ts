@@ -4,6 +4,7 @@ import type { OffRecordRemoved, ScreenEvent } from '../types/session'
 import { MicGate } from '../lib/micGate'
 import { AnswerPairer } from './answers'
 import { SpeechTracker } from './speech'
+import { api, wsUrl } from '../lib/api'
 
 // The voice side of a live capture, same contract as the server's interviewer test page:
 //   screen events      -> sendContextualUpdate (silent background context)
@@ -65,7 +66,7 @@ const BRIEF_RETRY_MS = 3000
 const BRIEF_MAX_TRIES = 10
 
 function post(path: string, body: unknown) {
-  void fetch(`/api${path}`, {
+  void fetch(api(path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -130,7 +131,7 @@ export function useInterviewer(
     async function sendBrief() {
       for (let i = 0; i < BRIEF_MAX_TRIES && !closed; i++) {
         try {
-          const res = await fetch('/api/environment/brief')
+          const res = await fetch(api('/environment/brief'))
           const { brief, ready } = (await res.json()) as { brief: string | null; ready: boolean }
           if (ready) {
             if (brief) conversation?.sendContextualUpdate(`About this application:\n${brief}`)
@@ -147,7 +148,7 @@ export function useInterviewer(
       setStatus('connecting')
       setError(null)
       try {
-        const config = (await (await fetch('/api/config')).json()) as { agent_id: string }
+        const config = (await (await fetch(api('/config'))).json()) as { agent_id: string }
         if (!config.agent_id) throw new Error('ELEVENLABS_INTERVIEWER_AGENT_ID is not set in .env')
         const conv = await Conversation.startSession({
           agentId: config.agent_id,
@@ -227,8 +228,7 @@ export function useInterviewer(
         setStatus('listening')
         void sendBrief()
 
-        const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
-        socket = new WebSocket(`${protocol}://${location.host}/api/ws/session/${sid}`)
+        socket = new WebSocket(wsUrl(`/ws/session/${sid}`))
         socket.addEventListener('message', (m) => {
           const msg = JSON.parse(m.data) as ServerMessage
           if (msg.type === 'snapshot') (msg.data as { events: ScreenEvent[] }).events.forEach(forward)

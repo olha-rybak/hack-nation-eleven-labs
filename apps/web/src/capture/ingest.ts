@@ -1,8 +1,10 @@
+import { api } from '../lib/api'
+
 // Server contract (apps/server/apprentice/capture/routes.py, session/routes.py):
 //   POST /sessions {role}                         -> {session_id}
 //   POST /ingest/frame?session_id&frame_ts        body = JPEG for a changed frame, empty when unchanged
 //   POST /sessions/:id/end                        stops the live ask-now loop
-// The dev proxy maps /api/* to the server root.
+// Paths are relative to the server root (lib/api.ts adds the base).
 
 const useMock = import.meta.env.VITE_MOCK === '1'
 
@@ -11,7 +13,7 @@ export class ServerUnreachable extends Error {}
 async function call(path: string, init: RequestInit): Promise<Response> {
   let res: Response
   try {
-    res = await fetch(`/api${path}`, init)
+    res = await fetch(api(path), init)
   } catch {
     throw new ServerUnreachable(path)
   }

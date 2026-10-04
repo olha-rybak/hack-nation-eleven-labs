@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     ENVIRONMENT_DIR: str = "config/environment"
     ENVIRONMENT_CACHE_DIR: str = "data/environment"
     KNOWN_MAX_FACTS: int = 10
+    # Origins allowed to call the API from another domain, comma-separated ("*" = any).
+    # Needed when the web app is hosted apart from the server (Vercel + a container host).
+    CORS_ORIGINS: str = "*"
     KNOWN_MAX_CHARS: int = 2000
     PAUSE_TICK_SEC: float = 0.25
     OFF_THE_RECORD_WINDOW_SEC: float = 30

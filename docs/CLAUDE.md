@@ -23,6 +23,7 @@ Status: `planned` = not written yet, `draft` = exists, may change, `stable` = ot
 | `question-selection.md` | How the one question is picked from events | T-108 | planned |
 | [knowledge-graph.md](knowledge-graph.md) | Facts from expert answers across sessions; the Known slice sent with ASK_NOW; rule review | T-110, T-205 | draft |
 | [returns-desk.md](returns-desk.md) | Returns desk sandbox app (`/shop`): expert rules, cases, training case, expert script | scenario | draft |
+| [deploy.md](deploy.md) | Hosting: web app on Vercel, server container with a `/data` volume, env vars, demo seed | deploy | draft |
 
 ## Open decisions
 

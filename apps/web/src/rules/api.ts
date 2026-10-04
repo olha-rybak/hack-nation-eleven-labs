@@ -1,4 +1,5 @@
 import type { Fact } from '../types/knowledge'
+import { api } from '../lib/api'
 
 // Server routes (T-205, docs/knowledge-graph.md):
 //   GET    /api/knowledge/review          -> facts not agreed yet, each with its rule sentence; 502 if the LLM fails
@@ -16,11 +17,11 @@ async function detail(res: Response): Promise<string> {
 }
 
 function fact(id: string) {
-  return `/api/knowledge/facts/${encodeURIComponent(id)}`
+  return api(`/knowledge/facts/${encodeURIComponent(id)}`)
 }
 
 export async function fetchRulesToReview(signal?: AbortSignal): Promise<Fact[]> {
-  const res = await fetch('/api/knowledge/review', { signal })
+  const res = await fetch(api('/knowledge/review'), { signal })
   if (!res.ok) throw new Error(`Loading the rules failed (${await detail(res)})`)
   return ((await res.json()) as { facts: Fact[] }).facts
 }

@@ -2,6 +2,7 @@ import { useEffect, useReducer, useRef } from 'react'
 import type { EventCorrection, OffRecordRemoved, ScreenEvent } from '../types/session'
 import { emptyFeed, reduce, sweep, type FeedMessage, type FeedState } from './feed'
 import { openMockSession, type MockSession } from './mockSession'
+import { api, wsUrl } from '../lib/api'
 
 const useMock = import.meta.env.VITE_MOCK === '1'
 const LEAVE_MS = 450
@@ -35,8 +36,7 @@ export function useSessionFeed(sessionId: string | null) {
       }
     }
 
-    const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
-    const socket = new WebSocket(`${protocol}://${location.host}/api/ws/session/${encodeURIComponent(sessionId)}`)
+    const socket = new WebSocket(wsUrl(`/ws/session/${encodeURIComponent(sessionId)}`))
     socket.addEventListener('message', (e) => onMessage(JSON.parse(e.data) as FeedMessage))
     return () => socket.close()
   }, [sessionId])
@@ -47,7 +47,7 @@ export function useSessionFeed(sessionId: string | null) {
       if (!ev) throw new Error('unknown event')
       return ev
     }
-    const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId!)}/events/${encodeURIComponent(id)}`, {
+    const res = await fetch(api(`/sessions/${encodeURIComponent(sessionId!)}/events/${encodeURIComponent(id)}`), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch),
@@ -59,7 +59,7 @@ export function useSessionFeed(sessionId: string | null) {
   async function offTheRecord(seconds: number): Promise<OffRecordRemoved> {
     if (useMock) return mock.current!.offRecord(seconds)
     // The server measures the window on the session's own clock (latest ts_ms), not ours.
-    const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId!)}/off-the-record`, {
+    const res = await fetch(api(`/sessions/${encodeURIComponent(sessionId!)}/off-the-record`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ seconds }),
