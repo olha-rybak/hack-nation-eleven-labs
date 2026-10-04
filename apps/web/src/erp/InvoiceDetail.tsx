@@ -187,7 +187,13 @@ export function InvoiceDetail({ id }: { id: string }) {
             <legend>Supplier</legend>
             <dl className="erp-fields">
               <dt>Name</dt>
-              <dd>{supplier.name}</dd>
+              <dd>
+                {supplier.vendorNo ? (
+                  <Link to={{ pathname: `/erp/vendors/${supplier.id}`, search: location.search }}>{supplier.name}</Link>
+                ) : (
+                  supplier.name
+                )}
+              </dd>
               <dt>Address</dt>
               <dd>
                 {supplier.street}, {supplier.city}
