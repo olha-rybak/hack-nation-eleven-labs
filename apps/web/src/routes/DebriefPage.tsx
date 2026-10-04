@@ -6,6 +6,7 @@ import '../debrief/debrief.css'
 export function DebriefPage() {
   const { sessionId = '' } = useParams()
   const { state, retry } = useDraft(sessionId)
+  const open = state.status === 'ready' ? state.draft.gaps.filter((g) => g.status === 'open') : []
 
   return (
     <SessionLayout sessionId={sessionId} panelTitle="Debrief">
@@ -28,12 +29,12 @@ export function DebriefPage() {
         <div className="placeholder debrief">
           <h1>{state.draft.title}</h1>
           <p>
-            {state.draft.gaps.length === 0
+            {open.length === 0
               ? 'Nothing left to ask. Every step and guardrail has your words.'
-              : `${state.draft.gaps.length} ${state.draft.gaps.length === 1 ? 'question' : 'questions'} the apprentice still has, most important first.`}
+              : `${open.length} ${open.length === 1 ? 'question' : 'questions'} the apprentice still has, most important first.`}
           </p>
           <ol className="debrief-gaps">
-            {state.draft.gaps.map((gap) => (
+            {open.map((gap) => (
               <li key={gap.id}>
                 <p className="debrief-question">{gap.question}</p>
                 <p className="debrief-why">{gap.why_it_matters}</p>

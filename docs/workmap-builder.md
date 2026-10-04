@@ -9,6 +9,12 @@ draft converts to a real `WorkMap` (T-200 schema).
 - `POST /sessions/{id}/workmap/draft` builds the draft, saves it as `workmap_draft.json` in the
   session folder, returns it. Takes ~10 s. 502 if the LLM returns nothing usable.
 - `GET /sessions/{id}/workmap/draft` returns the saved draft.
+- `POST /sessions/{id}/debrief/answer` closes one gap (T-203) and returns the updated draft.
+  Body `{"gap_id": "gap-2", "text": "<the expert's words>", "ts_ms": 512000}`, or
+  `{"gap_id": "gap-2", "declined": true}` when the expert would rather not answer. The answer
+  becomes a `Quote` with `source: "debrief"`; it fills the reason of the gap's guardrail, or else its
+  step, if that reason is still missing, and is added to the knowledge graph (T-110).
+  404 unknown session, draft or gap; 409 gap already closed; 422 no text or `ts_ms`.
 
 Draft shape (`apps/server/apprentice/workmap/draft.py`): same as the Work Map, plus
 
@@ -16,7 +22,8 @@ Draft shape (`apps/server/apprentice/workmap/draft.py`): same as the Work Map, p
 - `steps[].event_ids` = the session events the step was built from.
 - `gaps[]`, most important first: `id`, `kind` (`no_reason` | `no_threshold` | `unseen_branch` |
   `inconsistency`), `step_index`, `guardrail_id`, `question` (one spoken sentence, ready to ask),
-  `why_it_matters`, `importance` 1-5.
+  `why_it_matters`, `importance` 1-5, `status` (`open` | `answered` | `declined`), `answer`
+  (the debrief `Quote`, once answered).
 
 `DraftWorkMap.to_workmap()` raises until every reason is filled.
 

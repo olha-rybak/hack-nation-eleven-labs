@@ -15,6 +15,7 @@ from apprentice.workmap.builder import (
     expert_lines,
     render_session,
 )
+from apprentice.workmap.draft import DraftWorkMap
 
 EVENTS = [
     {
@@ -221,3 +222,76 @@ def test_route_builds_and_saves_draft(tmp_path):
         assert r.status_code == 200 and r.json()["steps"][0]["reason"]["text"].startswith("Equip")
         assert client.get("/sessions/s1/workmap/draft").json()["id"] == r.json()["id"]
         assert client.get("/sessions/nope/workmap/draft").status_code == 404
+
+
+@pytest.fixture
+def debrief(tmp_path):
+    """A session with a saved draft: step 2 (the hold) has no reason yet."""
+    from apprentice.knowledge.graph import KnowledgeGraph
+
+    with TestClient(app) as client:
+        app.state.store = store = SessionStore(tmp_path / "sessions")
+        app.state.knowledge = KnowledgeGraph(tmp_path / "graph.json")
+        app.state.map_llm = FakeLlm(llm_draft())
+        store.create("s1")
+        for e in EVENTS:
+            store.append_event("s1", e)
+        for line in TRANSCRIPT:
+            store.append_transcript("s1", line)
+        draft = client.post("/sessions/s1/workmap/draft").json()
+        yield client, draft
+
+
+def gap_of(draft: dict, kind: str) -> dict:
+    return next(g for g in draft["gaps"] if g["kind"] == kind)
+
+
+def test_answer_fills_the_missing_reason_and_is_saved(debrief):
+    client, draft = debrief
+    gap = gap_of(draft, "no_reason")
+    assert gap["status"] == "open" and gap["step_index"] == 2
+    words = "Anything dated December waits for the year-end release."
+    r = client.post(
+        "/sessions/s1/debrief/answer", json={"gap_id": gap["id"], "text": words, "ts_ms": 90000}
+    )
+    assert r.status_code == 200
+    saved = client.get("/sessions/s1/workmap/draft").json()
+    closed = next(g for g in saved["gaps"] if g["id"] == gap["id"])
+    assert closed["status"] == "answered" and closed["answer"]["source"] == "debrief"
+    reason = saved["steps"][1]["reason"]
+    assert reason == {"text": words, "speaker": "expert", "ts_ms": 90000, "source": "debrief"}
+    wm = DraftWorkMap.model_validate(saved).to_workmap()  # every step has the expert's words now
+    assert gap["question"] not in wm.open_questions
+
+
+def test_answer_goes_to_the_knowledge_graph(debrief):
+    client, draft = debrief
+    gap = gap_of(draft, "no_reason")
+    client.post(
+        "/sessions/s1/debrief/answer", json={"gap_id": gap["id"], "text": "Year end.", "ts_ms": 1}
+    )
+    [fact] = app.state.knowledge.facts()
+    assert fact["question"] == gap["question"] and fact["quotes"][0]["event_id"] == "c"
+
+
+def test_decline_closes_the_gap_without_a_reason(debrief):
+    client, draft = debrief
+    gap = gap_of(draft, "unseen_branch")
+    r = client.post("/sessions/s1/debrief/answer", json={"gap_id": gap["id"], "declined": True})
+    closed = next(g for g in r.json()["gaps"] if g["id"] == gap["id"])
+    assert closed["status"] == "declined" and closed["answer"] is None
+    assert app.state.knowledge.facts() == []
+
+
+def test_answer_errors(debrief):
+    client, draft = debrief
+    gid = draft["gaps"][0]["id"]
+    post = lambda body, sid="s1": client.post(f"/sessions/{sid}/debrief/answer", json=body)  # noqa: E731
+    assert post({"gap_id": "gap-99", "text": "x", "ts_ms": 1}).status_code == 404
+    assert post({"gap_id": gid, "text": "  ", "ts_ms": 1}).status_code == 422
+    assert post({"gap_id": gid, "text": "x"}).status_code == 422  # no ts_ms
+    assert post({"gap_id": gid, "text": "x", "ts_ms": -1}).status_code == 422
+    assert post({"gap_id": gid, "text": "x", "ts_ms": 1}).status_code == 200
+    assert post({"gap_id": gid, "text": "again", "ts_ms": 2}).status_code == 409
+    app.state.store.create("s2")
+    assert post({"gap_id": gid, "text": "x", "ts_ms": 1}, "s2").status_code == 404  # no draft
