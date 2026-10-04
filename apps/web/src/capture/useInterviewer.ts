@@ -1,16 +1,19 @@
 import { Conversation, type Mode } from '@elevenlabs/client'
 import { useEffect, useState } from 'react'
 import type { ScreenEvent } from '../types/session'
+import { AnswerPairer } from './answers'
 
 // The voice side of a live capture, same contract as the server's interviewer test page:
 //   screen events      -> sendContextualUpdate (silent background context)
 //   ask_now from server -> sendUserMessage("ASK_NOW" + Known list), the agent asks one question
 //   what is said       -> POST /sessions/:id/transcript, agent mode -> POST /sessions/:id/signals
+//   question + answer  -> POST /knowledge/answers, so the next session doesn't ask it again
 
 export type InterviewerStatus = 'off' | 'connecting' | 'listening' | 'speaking' | 'error'
 
 interface AskNow {
   subject: string
+  event_id: string
   known?: { text: string }[]
 }
 
@@ -60,6 +63,7 @@ export function useInterviewer(sessionId: string | null, startedAt: number | nul
     let socket: WebSocket | null = null
     let closed = false
     const sentEvents = new Set<string>()
+    const pairer = new AnswerPairer()
 
     const forward = (e: ScreenEvent) => {
       if (sentEvents.has(e.id)) return
@@ -83,6 +87,11 @@ export function useInterviewer(sessionId: string | null, startedAt: number | nul
           onMessage: ({ message, role }) => {
             const speaker = role === 'agent' ? 'agent' : 'expert'
             post(`/sessions/${sid}/transcript`, { speaker, text: message, ts_ms: Math.round(performance.now() - startedAt!) })
+            if (role === 'agent') pairer.agent(message)
+            else {
+              const answer = pairer.expert(message)
+              if (answer) post('/knowledge/answers', { session_id: sessionId, ...answer })
+            }
           },
           onDisconnect: () => {
             if (!closed) setStatus('off')
@@ -105,7 +114,11 @@ export function useInterviewer(sessionId: string | null, startedAt: number | nul
           const msg = JSON.parse(m.data) as ServerMessage
           if (msg.type === 'snapshot') (msg.data as { events: ScreenEvent[] }).events.forEach(forward)
           else if (msg.type === 'event') forward(msg.data as ScreenEvent)
-          else if (msg.type === 'ask_now') conversation?.sendUserMessage(askText(msg.data as AskNow))
+          else if (msg.type === 'ask_now') {
+            const ask = msg.data as AskNow
+            pairer.ask(ask.event_id)
+            conversation?.sendUserMessage(askText(ask))
+          }
         })
       } catch (err) {
         if (closed) return
