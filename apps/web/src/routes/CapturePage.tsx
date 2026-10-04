@@ -6,6 +6,13 @@ import { SessionLayout } from '../components/SessionLayout'
 import { CapturePanel } from '../session/CapturePanel'
 import { useSessionFeed } from '../session/useSessionFeed'
 
+function summary(events: number, asks: { question_index: number; budget: number }[]) {
+  const last = asks.at(-1)
+  const parts = [`${events} ${events === 1 ? 'event' : 'events'}`]
+  if (last) parts.push(`${last.question_index} of ${last.budget} asked`)
+  return parts.join(' · ')
+}
+
 const WINDOW_SEC = Number(import.meta.env.VITE_OFF_THE_RECORD_WINDOW_SEC) || 30
 
 const voiceText: Record<InterviewerStatus, string> = {
@@ -54,7 +61,13 @@ export function CapturePage() {
   )
 
   return (
-    <SessionLayout sessionId={sessionId} panelTitle="Apprentice" panel={panel}>
+    <SessionLayout
+      sessionId={sessionId}
+      panelTitle="Apprentice"
+      panel={panel}
+      panelSummary={summary(feed.events.length, feed.asks)}
+      panelActivity={feed.events.length + feed.transcript.length + feed.asks.length}
+    >
       <CaptureView capture={capture} />
       {live && (
         <p className="cap-hint" role="status">
