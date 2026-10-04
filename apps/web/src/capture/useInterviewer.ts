@@ -1,6 +1,6 @@
 import { Conversation, type Mode } from '@elevenlabs/client'
-import { useEffect, useState } from 'react'
-import type { ScreenEvent } from '../types/session'
+import { useEffect, useRef, useState } from 'react'
+import type { OffRecordRemoved, ScreenEvent } from '../types/session'
 import { AnswerPairer } from './answers'
 import { SpeechTracker } from './speech'
 
@@ -10,6 +10,8 @@ import { SpeechTracker } from './speech'
 //   what is said       -> POST /sessions/:id/transcript, agent mode -> POST /sessions/:id/signals
 //   expert voice (VAD) -> POST /sessions/:id/signals {user_speaking}, so no question lands mid-sentence
 //   question + answer  -> POST /knowledge/answers, so the next session doesn't ask it again
+//   off_the_record     -> client tool calling the same feed.offTheRecord as the panel button
+//   paused             -> mic muted, no transcript/answers/VAD posts (nothing from voice while paused)
 
 const VAD_THRESHOLD = Number(import.meta.env.VITE_VAD_SPEECH_THRESHOLD) || 0.5
 const VAD_RELEASE_MS = Number(import.meta.env.VITE_VAD_RELEASE_MS) || 400
@@ -61,9 +63,22 @@ function post(path: string, body: unknown) {
   }).catch(() => {})
 }
 
-export function useInterviewer(sessionId: string | null, startedAt: number | null) {
+export function useInterviewer(
+  sessionId: string | null,
+  startedAt: number | null,
+  opts: { paused?: boolean; onOffTheRecord?: () => Promise<OffRecordRemoved> } = {},
+) {
   const [status, setStatus] = useState<InterviewerStatus>('off')
   const [error, setError] = useState<string | null>(null)
+  const conversationRef = useRef<Conversation | null>(null)
+  const pausedRef = useRef(Boolean(opts.paused))
+  const onOffTheRecordRef = useRef(opts.onOffTheRecord)
+
+  // Keep latest opts without reconnecting the conversation (deps stay [sessionId, startedAt]).
+  useEffect(() => {
+    pausedRef.current = Boolean(opts.paused)
+    onOffTheRecordRef.current = opts.onOffTheRecord
+  })
 
   useEffect(() => {
     if (!sessionId || startedAt == null) return
@@ -75,6 +90,7 @@ export function useInterviewer(sessionId: string | null, startedAt: number | nul
     const pairer = new AnswerPairer()
     const speech = new SpeechTracker(VAD_THRESHOLD, VAD_RELEASE_MS)
     const userSpeaking = (speaking: boolean | null) => {
+      if (pausedRef.current) return
       if (speaking !== null) post(`/sessions/${sid}/signals`, { user_speaking: speaking })
     }
     const release = setInterval(() => userSpeaking(speech.expire(performance.now())), 200)
@@ -94,12 +110,33 @@ export function useInterviewer(sessionId: string | null, startedAt: number | nul
         const conv = await Conversation.startSession({
           agentId: config.agent_id,
           connectionType: 'webrtc',
+          clientTools: {
+            off_the_record: async () => {
+              if (pausedRef.current) return 'Recording is paused; nothing is being recorded.'
+              const handler = onOffTheRecordRef.current
+              if (!handler) return 'Off the record failed: no handler. Nothing was removed.'
+              try {
+                const removed = await handler()
+                return (
+                  `Removed the last stretch: ${removed.deleted_event_ids.length} events, ` +
+                  `${removed.transcript} transcript lines, ${removed.frames} frames. Deleted from disk.`
+                )
+              } catch (err) {
+                const message = err instanceof Error ? err.message : String(err)
+                return `Off the record failed: ${message}. Nothing was removed.`
+              }
+            },
+          },
           onModeChange: ({ mode }: { mode: Mode }) => {
             setStatus(mode)
             post(`/sessions/${sid}/signals`, { agent_speaking: mode === 'speaking' })
           },
-          onVadScore: ({ vadScore }: { vadScore: number }) => userSpeaking(speech.score(vadScore, performance.now())),
+          onVadScore: ({ vadScore }: { vadScore: number }) => {
+            if (pausedRef.current) return
+            userSpeaking(speech.score(vadScore, performance.now()))
+          },
           onMessage: ({ message, role }) => {
+            if (pausedRef.current) return
             const speaker = role === 'agent' ? 'agent' : 'expert'
             post(`/sessions/${sid}/transcript`, { speaker, text: message, ts_ms: Math.round(performance.now() - startedAt!) })
             if (role === 'agent') pairer.agent(message)
@@ -121,6 +158,11 @@ export function useInterviewer(sessionId: string | null, startedAt: number | nul
           return
         }
         conversation = conv
+        conversationRef.current = conv
+        if (pausedRef.current) {
+          conv.setMicMuted(true)
+          post(`/sessions/${sid}/signals`, { user_speaking: false })
+        }
         setStatus('listening')
 
         const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
@@ -130,6 +172,8 @@ export function useInterviewer(sessionId: string | null, startedAt: number | nul
           if (msg.type === 'snapshot') (msg.data as { events: ScreenEvent[] }).events.forEach(forward)
           else if (msg.type === 'event') forward(msg.data as ScreenEvent)
           else if (msg.type === 'ask_now') {
+            // Paused: the mic is muted and nothing is recorded, so a question now could not be answered.
+            if (pausedRef.current) return
             const ask = msg.data as AskNow
             pairer.ask(ask.event_id)
             conversation?.sendUserMessage(askText(ask))
@@ -147,10 +191,25 @@ export function useInterviewer(sessionId: string | null, startedAt: number | nul
       closed = true
       clearInterval(release)
       socket?.close()
+      conversationRef.current = null
       void conversation?.endSession()
       setStatus('off')
     }
   }, [sessionId, startedAt])
 
-  return { status, error }
+  // Mute/unmute when pause toggles; does not reconnect the conversation.
+  useEffect(() => {
+    const conv = conversationRef.current
+    if (!conv || !sessionId) return
+    if (opts.paused) {
+      conv.setMicMuted(true)
+      post(`/sessions/${encodeURIComponent(sessionId)}/signals`, { user_speaking: false })
+    } else {
+      conv.setMicMuted(false)
+    }
+  }, [opts.paused, sessionId])
+
+  const connected = status === 'listening' || status === 'speaking'
+  const muted = Boolean(opts.paused) && connected
+  return { status, error, muted }
 }

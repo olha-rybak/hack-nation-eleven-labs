@@ -33,6 +33,7 @@ export function CaptureView({ capture }: { capture: ReturnType<typeof useScreenC
   const { state, start, stop, reset } = capture
   const videoRef = useRef<HTMLVideoElement>(null)
   const live = state.status === 'live' || state.status === 'stopping'
+  const paused = state.status === 'live' && state.paused
 
   const stream = live ? state.capture.stream : null
   useEffect(() => {
@@ -48,9 +49,9 @@ export function CaptureView({ capture }: { capture: ReturnType<typeof useScreenC
       <div className="cap">
         <div className="cap-preview">
           <video ref={videoRef} autoPlay muted playsInline aria-label="Your shared screen" />
-          <div className="cap-recording glass" role="status">
+          <div className={`cap-recording glass${paused ? ' paused' : ''}`} role="status">
             <span className="cap-dot" aria-hidden="true" />
-            <span>{state.status === 'stopping' ? 'Saving' : 'Recording'}</span>
+            <span>{state.status === 'stopping' ? 'Saving' : paused ? 'Paused' : 'Recording'}</span>
             <Elapsed since={state.capture.startedAt} />
             <button type="button" className="button compact" onClick={stop} disabled={state.status === 'stopping'}>
               Stop sharing
