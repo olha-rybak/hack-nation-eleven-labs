@@ -28,8 +28,8 @@ draft converts to a real `WorkMap` (T-200 schema).
   `workmap.json` → `{workmap, left_out}`. Steps and guardrails the expert never explained are left out
   of the map (their titles in `left_out`), not invented. 409 if no step was explained at all; the
   web app then closes the debrief without a Work Map and goes on to the rule review.
-- `GET /sessions/{id}/workmap` the saved Work Map, 404 until the debrief finishes. The `/map/:id`
-  page reads this.
+- `GET /sessions/{id}/workmap` the saved Work Map, 404 until the debrief finishes. The Vault
+  (`/vault/:id`) reads this.
 
 Draft shape (`apps/server/apprentice/workmap/draft.py`): same as the Work Map, plus
 
@@ -65,7 +65,7 @@ The agent asks it; if the answer is vague it asks one follow-up. Its next line c
 (`debrief/turns.ts`): an acknowledgement = answered (all expert lines since the question are the
 answer), "Okay, skipping that one." = declined, "Okay, let's stop here." = stop. The page posts
 the answer, fetches the next gap, and when none is left sends `DEBRIEF_DONE`; after the closing line
-it saves the Work Map and opens `/map/:id` (the teach-back, T-204, goes here once it exists).
+it saves the Work Map and opens the rule review, which links on to the Vault (`/vault/:id`).
 **Skip this question** declines the current gap; **Stop here** saves the Work Map at any point.
 
 ## Provenance by construction

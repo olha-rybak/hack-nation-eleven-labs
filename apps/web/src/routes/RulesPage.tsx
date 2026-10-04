@@ -15,7 +15,7 @@ export function RulesPage() {
   const [done, setDone] = useState(0)
   // Every debrief question skipped: nothing was explained, so no Work Map was saved.
   const noWorkMap = (useLocation().state as { noWorkMap?: boolean } | null)?.noWorkMap === true
-  const nextPath = noWorkMap ? '/capture' : `/map/${encodeURIComponent(sessionId)}`
+  const nextPath = noWorkMap ? '/capture' : `/vault/${encodeURIComponent(sessionId)}`
 
   useEffect(() => {
     const controller = new AbortController()
@@ -64,7 +64,7 @@ export function RulesPage() {
             {noWorkMap && ' No Work Map was saved for this session: every debrief question was skipped.'}
           </p>
           <Link className="button" to={nextPath}>
-            {noWorkMap ? 'Start a new session' : 'Open the Work Map'}
+            {noWorkMap ? 'Start a new session' : 'Open the Work Map in the Vault'}
           </Link>
         </div>
       )}
