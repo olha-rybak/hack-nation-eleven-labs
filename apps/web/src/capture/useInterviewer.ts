@@ -5,7 +5,7 @@ import { AnswerPairer } from './answers'
 
 // The voice side of a live capture, same contract as the server's interviewer test page:
 //   screen events      -> sendContextualUpdate (silent background context)
-//   ask_now from server -> sendUserMessage("ASK_NOW" + Known list), the agent asks one question
+//   ask_now from server -> sendUserMessage("ASK_NOW" + subject + Known list), the agent asks one question
 //   what is said       -> POST /sessions/:id/transcript, agent mode -> POST /sessions/:id/signals
 //   question + answer  -> POST /knowledge/answers, so the next session doesn't ask it again
 
@@ -14,6 +14,7 @@ export type InterviewerStatus = 'off' | 'connecting' | 'listening' | 'speaking' 
 interface AskNow {
   subject: string
   event_id: string
+  guardrail?: boolean
   known?: { text: string }[]
 }
 
@@ -38,10 +39,13 @@ function eventLine(e: ScreenEvent): string {
   return line
 }
 
-function askText(ask: AskNow): string {
+// The format the agent's system prompt describes: cue, what to ask about, then what is already known.
+export function askText(ask: AskNow): string {
+  let text = `ASK_NOW\nSubject: ${ask.subject}`
+  if (ask.guardrail) text += '\nGuardrail question'
   const known = ask.known ?? []
-  if (!known.length) return 'ASK_NOW'
-  return `ASK_NOW\nKnown:\n${known.map((k) => `- ${k.text}`).join('\n')}`
+  if (known.length) text += `\nKnown:\n${known.map((k) => `- ${k.text}`).join('\n')}`
+  return text
 }
 
 function post(path: string, body: unknown) {

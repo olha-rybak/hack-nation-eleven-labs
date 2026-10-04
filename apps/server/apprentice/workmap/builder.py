@@ -69,7 +69,7 @@ def expert_lines(transcript: list[dict]) -> list[dict]:
     out = []
     for line in transcript:
         text = (line.get("text") or "").strip()
-        if not text or text in CUES:
+        if not text or text.split("\n", 1)[0] in CUES:  # a cue may carry Subject/Known lines
             continue
         out.append(line | {"n": len(out) + 1})
     return out
