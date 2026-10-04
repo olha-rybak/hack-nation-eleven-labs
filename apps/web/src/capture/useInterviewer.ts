@@ -10,6 +10,7 @@ import { SpeechTracker } from './speech'
 //   what is said       -> POST /sessions/:id/transcript, agent mode -> POST /sessions/:id/signals
 //   expert voice (VAD) -> POST /sessions/:id/signals {user_speaking}, so no question lands mid-sentence
 //   question + answer  -> POST /knowledge/answers, so the next session doesn't ask it again
+//   environment brief  -> GET /environment/brief once connected, sendContextualUpdate ("About this application:")
 //   off_the_record     -> client tool calling the same feed.offTheRecord as the panel button
 //   paused             -> mic muted, no transcript/answers/VAD posts (nothing from voice while paused)
 
@@ -55,6 +56,9 @@ export function askText(ask: AskNow): string {
   return text
 }
 
+const BRIEF_RETRY_MS = 3000
+const BRIEF_MAX_TRIES = 10
+
 function post(path: string, body: unknown) {
   void fetch(`/api${path}`, {
     method: 'POST',
@@ -99,6 +103,22 @@ export function useInterviewer(
       if (sentEvents.has(e.id)) return
       sentEvents.add(e.id)
       conversation?.sendContextualUpdate(`Screen event: ${eventLine(e)}`)
+    }
+
+    async function sendBrief() {
+      for (let i = 0; i < BRIEF_MAX_TRIES && !closed; i++) {
+        try {
+          const res = await fetch('/api/environment/brief')
+          const { brief, ready } = (await res.json()) as { brief: string | null; ready: boolean }
+          if (ready) {
+            if (brief) conversation?.sendContextualUpdate(`About this application:\n${brief}`)
+            return
+          }
+        } catch {
+          // retried below, then given up silently
+        }
+        await new Promise((resolve) => setTimeout(resolve, BRIEF_RETRY_MS))
+      }
     }
 
     async function connect() {
@@ -164,6 +184,7 @@ export function useInterviewer(
           post(`/sessions/${sid}/signals`, { user_speaking: false })
         }
         setStatus('listening')
+        void sendBrief()
 
         const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
         socket = new WebSocket(`${protocol}://${location.host}/api/ws/session/${sid}`)
