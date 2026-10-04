@@ -1,12 +1,28 @@
-import { Link, useParams } from 'react-router'
+import { useState } from 'react'
+import { useNavigate, useParams } from 'react-router'
 import { SessionLayout } from '../components/SessionLayout'
+import { finishDebrief } from '../debrief/api'
 import { useDraft } from '../debrief/useDraft'
 import '../debrief/debrief.css'
 
 export function DebriefPage() {
   const { sessionId = '' } = useParams()
+  const navigate = useNavigate()
   const { state, retry } = useDraft(sessionId)
-  const open = state.status === 'ready' ? state.draft.gaps.filter((g) => g.status === 'open') : []
+  const [finishing, setFinishing] = useState(false)
+  const [finishError, setFinishError] = useState<string | null>(null)
+
+  async function finish() {
+    setFinishing(true)
+    setFinishError(null)
+    try {
+      await finishDebrief(sessionId)
+      navigate(`/map/${encodeURIComponent(sessionId)}`)
+    } catch (err) {
+      setFinishError(err instanceof Error ? err.message : String(err))
+      setFinishing(false)
+    }
+  }
 
   return (
     <SessionLayout sessionId={sessionId} panelTitle="Debrief">
@@ -29,21 +45,26 @@ export function DebriefPage() {
         <div className="placeholder debrief">
           <h1>{state.draft.title}</h1>
           <p>
-            {open.length === 0
-              ? 'Nothing left to ask. Every step and guardrail has your words.'
-              : `${open.length} ${open.length === 1 ? 'question' : 'questions'} the apprentice still has, most important first.`}
+            {state.debrief.done
+              ? 'Nothing left to ask. Finish to save the Work Map.'
+              : `${state.debrief.left} ${state.debrief.left === 1 ? 'gap' : 'gaps'} left, in the order the apprentice will ask them.`}
           </p>
           <ol className="debrief-gaps">
-            {open.map((gap) => (
+            {state.debrief.queue.map((gap) => (
               <li key={gap.id}>
                 <p className="debrief-question">{gap.question}</p>
                 <p className="debrief-why">{gap.why_it_matters}</p>
               </li>
             ))}
           </ol>
-          <Link className="link more" to={`/map/${encodeURIComponent(sessionId)}`}>
-            Work Map
-          </Link>
+          <button type="button" className={state.debrief.done ? 'button' : 'button ghost'} disabled={finishing} onClick={finish}>
+            {finishing ? 'Saving the Work Map…' : state.debrief.done ? 'Finish debrief' : 'Stop here and save the Work Map'}
+          </button>
+          {finishError && (
+            <p className="debrief-why" role="alert">
+              {finishError}.
+            </p>
+          )}
         </div>
       )}
     </SessionLayout>

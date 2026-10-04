@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import type { DraftWorkMap } from '../types/draft'
-import { buildDraft, fetchDraft } from './api'
+import type { DebriefStatus, DraftWorkMap } from '../types/draft'
+import { buildDraft, fetchDebrief, fetchDraft } from './api'
 
 export type DraftState =
   | { status: 'loading' }
   | { status: 'building' }
   | { status: 'error'; message: string }
-  | { status: 'ready'; draft: DraftWorkMap }
+  | { status: 'ready'; draft: DraftWorkMap; debrief: DebriefStatus }
 
 /** The session's draft Work Map: the saved one, or built now if End task left none. */
 export function useDraft(sessionId: string) {
@@ -21,10 +21,12 @@ export function useDraft(sessionId: string) {
     }
     ;(async () => {
       try {
-        const saved = await fetchDraft(sessionId, controller.signal)
-        if (saved) return set({ status: 'ready', draft: saved })
-        set({ status: 'building' })
-        set({ status: 'ready', draft: await buildDraft(sessionId, controller.signal) })
+        let draft = await fetchDraft(sessionId, controller.signal)
+        if (!draft) {
+          set({ status: 'building' })
+          draft = await buildDraft(sessionId, controller.signal)
+        }
+        set({ status: 'ready', draft, debrief: await fetchDebrief(sessionId, controller.signal) })
       } catch (err) {
         set({ status: 'error', message: err instanceof Error ? err.message : String(err) })
       }

@@ -6,13 +6,16 @@ from pydantic import BaseModel, Field, model_validator
 
 from apprentice.knowledge.graph import nodes_for_event
 from apprentice.llm.structured import StructuredLlmError
+from apprentice.settings import get_settings
+from apprentice.workmap import debrief
 from apprentice.workmap.builder import build_draft
 from apprentice.workmap.draft import DraftWorkMap, Gap, GapClosed
-from apprentice.workmap.schema import Quote
+from apprentice.workmap.schema import Quote, WorkMap
 
 router = APIRouter()
 
 DRAFT_FILE = "workmap_draft.json"
+WORKMAP_FILE = "workmap.json"
 
 
 def _session_dir(request: Request, session_id: str):
@@ -48,9 +51,52 @@ def _load_draft(request: Request, session_id: str) -> DraftWorkMap:
     return DraftWorkMap.model_validate(json.loads(path.read_text(encoding="utf-8")))
 
 
+def _save_draft(request: Request, session_id: str, draft: DraftWorkMap) -> None:
+    (_session_dir(request, session_id) / DRAFT_FILE).write_text(
+        draft.model_dump_json(indent=2), encoding="utf-8"
+    )
+
+
 @router.get("/sessions/{session_id}/workmap/draft")
 def get_draft(session_id: str, request: Request) -> DraftWorkMap:
     return _load_draft(request, session_id)
+
+
+@router.get("/sessions/{session_id}/workmap")
+def get_workmap(session_id: str, request: Request) -> WorkMap:
+    path = _session_dir(request, session_id) / WORKMAP_FILE
+    if not path.is_file():
+        raise HTTPException(404, "no Work Map yet; it is made when the debrief finishes")
+    return WorkMap.model_validate(json.loads(path.read_text(encoding="utf-8")))
+
+
+@router.get("/sessions/{session_id}/debrief")
+async def debrief_status(session_id: str, request: Request) -> debrief.DebriefStatus:
+    """The next gap to ask, how many are left, and whether the debrief is done."""
+    draft = _load_draft(request, session_id)
+    asked_live = debrief.guardrail_asked_live(request.app.state.store.pause_log(session_id))
+    if debrief.ensure_guardrail_gap(draft, asked_live):
+        _save_draft(request, session_id, draft)
+    return debrief.status(draft, asked_live, get_settings().DEBRIEF_MIN_IMPORTANCE)
+
+
+class FinishedDebrief(BaseModel):
+    workmap: WorkMap
+    left_out: list[str]  # steps and guardrails dropped because the expert never explained them
+
+
+@router.post("/sessions/{session_id}/debrief/finish")
+async def finish_debrief(session_id: str, request: Request) -> FinishedDebrief:
+    """End the debrief, whether it is done or the expert stopped it, and save the Work Map."""
+    draft = _load_draft(request, session_id)
+    try:
+        workmap, left_out = debrief.finish(draft)
+    except debrief.NothingExplained as e:
+        raise HTTPException(409, str(e)) from None
+    (_session_dir(request, session_id) / WORKMAP_FILE).write_text(
+        workmap.model_dump_json(indent=2), encoding="utf-8"
+    )
+    return FinishedDebrief(workmap=workmap, left_out=left_out)
 
 
 class DebriefAnswer(BaseModel):
@@ -103,9 +149,7 @@ async def answer_gap(session_id: str, body: DebriefAnswer, request: Request) -> 
         raise HTTPException(404, "unknown gap") from None
     except GapClosed as e:
         raise HTTPException(409, str(e)) from None
-    (_session_dir(request, session_id) / DRAFT_FILE).write_text(
-        draft.model_dump_json(indent=2), encoding="utf-8"
-    )
+    _save_draft(request, session_id, draft)
     if not body.declined:
         _remember(request, session_id, draft, gap)
     return draft
