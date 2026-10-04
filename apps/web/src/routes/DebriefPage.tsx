@@ -26,7 +26,9 @@ export function DebriefPage() {
   const [finishError, setFinishError] = useState<string | null>(null)
   const [lines, setLines] = useState<TranscriptLine[]>([])
 
-  async function finish() {
+  async function finish(confirmed = false) {
+    // A confirmed map was saved before the teach-back; finishing again would hit the frozen map.
+    if (confirmed) return navigate(`/rules/${encodeURIComponent(sessionId)}`, { state: { noWorkMap: false } })
     setFinishing(true)
     setFinishError(null)
     try {
@@ -68,7 +70,7 @@ export function DebriefPage() {
           initial={state.debrief}
           finishing={finishing}
           finishError={finishError}
-          onFinish={finish}
+          onFinish={(confirmed) => void finish(confirmed)}
           onLines={setLines}
         />
       )}
@@ -82,7 +84,7 @@ interface DebriefProps {
   initial: DebriefStatus
   finishing: boolean
   finishError: string | null
-  onFinish: () => void
+  onFinish: (confirmed?: boolean) => void
   onLines: (lines: TranscriptLine[]) => void
 }
 
@@ -113,7 +115,28 @@ function Debrief({ sessionId, draft, initial, finishing, finishError, onFinish, 
         </p>
       )}
 
-      {running && current && (
+      {voice.teachBack && (
+        <section className="debrief-current" aria-label="Teach-back">
+          <p className="debrief-why">The apprentice explains it back. Say what is wrong, or that it is right.</p>
+          <p className="debrief-question">{voice.teachBack.text}</p>
+          {voice.teachBack.changes.length > 0 && (
+            <ul className="debrief-changes" aria-label="Changes to the Work Map">
+              {voice.teachBack.changes.map((c, i) => (
+                <li key={i}>
+                  <span className="debrief-why">{c.target === 'step' ? `Step ${c.ref}` : 'Rule'} · {c.field}</span>
+                  <del>{c.before}</del>
+                  <ins>{c.after}</ins>
+                </li>
+              ))}
+            </ul>
+          )}
+          <button type="button" className="button ghost compact" onClick={voice.confirm}>
+            Confirm the Work Map as it is
+          </button>
+        </section>
+      )}
+
+      {running && current && !voice.teachBack && (
         <section className="debrief-current" aria-label="Current question">
           <p className="debrief-question">{current.question}</p>
           {step && (
@@ -145,9 +168,11 @@ function Debrief({ sessionId, draft, initial, finishing, finishError, onFinish, 
             Start debrief
           </button>
         )}
-        <button type="button" className={debrief.done ? 'button' : 'button ghost'} disabled={finishing} onClick={onFinish}>
-          {finishing ? 'Saving the Work Map…' : debrief.done ? 'Finish debrief' : 'Stop here and save the Work Map'}
-        </button>
+        {!voice.teachBack && (
+          <button type="button" className={debrief.done ? 'button' : 'button ghost'} disabled={finishing} onClick={() => onFinish()}>
+            {finishing ? 'Saving the Work Map…' : debrief.done ? 'Finish debrief' : 'Stop here and save the Work Map'}
+          </button>
+        )}
       </div>
       {finishError && (
         <p className="debrief-why" role="alert">

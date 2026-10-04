@@ -68,3 +68,28 @@
 .placeholder .debrief-actions .button {
   margin-top: 0;
 }
+
+.debrief-changes {
+  display: grid;
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.debrief-changes li {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.debrief-changes del {
+  color: var(--muted);
+}
+
+.debrief-changes ins {
+  text-decoration: none;
+  font-weight: 500;
+}

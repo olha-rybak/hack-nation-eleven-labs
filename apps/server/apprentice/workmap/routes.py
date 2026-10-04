@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, model_validator
 from apprentice.knowledge.graph import nodes_for_event
 from apprentice.llm.structured import StructuredLlmError
 from apprentice.settings import get_settings
-from apprentice.workmap import debrief, known
+from apprentice.workmap import debrief, known, teachback
 from apprentice.workmap.builder import build_draft
 from apprentice.workmap.draft import DraftWorkMap, Gap, GapClosed
 from apprentice.workmap.schema import Quote, WorkMap
@@ -92,6 +92,44 @@ def confirm_workmap(session_id: str, request: Request) -> WorkMap:
         workmap.confirmed_at = datetime.now(UTC)
         path.write_text(workmap.model_dump_json(indent=2), encoding="utf-8")
     return workmap
+
+
+def _unconfirmed(request: Request, session_id: str):
+    path = _session_dir(request, session_id) / WORKMAP_FILE
+    if not path.is_file():
+        raise HTTPException(404, "no Work Map yet; it is made when the debrief finishes")
+    workmap = WorkMap.model_validate(json.loads(path.read_text(encoding="utf-8")))
+    if workmap.confirmed_at is not None:
+        raise HTTPException(409, "the Work Map is confirmed and frozen")
+    return path, workmap
+
+
+@router.post("/sessions/{session_id}/workmap/teachback")
+async def teach_back(session_id: str, request: Request) -> dict:
+    """The apprentice's explanation of the whole process, under a minute, for the expert to confirm
+    or correct (T-204)."""
+    _, workmap = _unconfirmed(request, session_id)
+    return {"text": await teachback.compose(request.app.state.map_llm, workmap)}
+
+
+class CorrectionBody(BaseModel):
+    text: str = Field(min_length=1)  # what the expert said, verbatim
+
+
+@router.post("/sessions/{session_id}/workmap/correct")
+async def correct_workmap(session_id: str, body: CorrectionBody, request: Request) -> dict:
+    """The expert's spoken correction becomes edits to the Work Map; returns what changed."""
+    path, workmap = _unconfirmed(request, session_id)
+    try:
+        corrected, changes = await teachback.correct(request.app.state.map_llm, workmap, body.text)
+    except Exception as e:  # noqa: BLE001 - any LLM failure (no key, timeout, bad JSON) is a 502
+        raise HTTPException(502, f"could not apply the correction: {e}") from None
+    if changes:
+        path.write_text(corrected.model_dump_json(indent=2), encoding="utf-8")
+    return {
+        "workmap": corrected.model_dump(mode="json"),
+        "changes": [c.model_dump() for c in changes],
+    }
 
 
 @router.get("/sessions/{session_id}/debrief")
