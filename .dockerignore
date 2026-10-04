@@ -1,0 +1,9 @@
+# Only what the backend image copies.
+**
+!apps/server/pyproject.toml
+!apps/server/apprentice
+!apps/server/tests/fixtures/workmap_returns.json
+!apps/web/public/mock-frames
+!config
+!scripts/seed_demo_session.py
+**/__pycache__

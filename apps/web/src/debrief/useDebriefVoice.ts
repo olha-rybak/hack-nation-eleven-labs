@@ -6,6 +6,7 @@ import type { DebriefStatus, DraftStep, DraftWorkMap, Gap } from '../types/draft
 import type { TranscriptLine } from '../types/session'
 import { answerGap, fetchDebrief } from './api'
 import { DebriefTurns, nextGapText } from './turns'
+import { api } from '../lib/api'
 
 // The spoken debrief (T-203), same agent pattern as the live interviewer (useInterviewer):
 //   next gap from GET /debrief  -> sendUserMessage(NEXT_GAP ...), the agent asks it
@@ -92,14 +93,14 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
       })
 
     try {
-      const config = (await (await fetch('/api/config')).json()) as {
+      const config = (await (await fetch(api('/config'))).json()) as {
         debrief_agent_id?: string
         debrief_prompt_override?: boolean
       }
       if (!config.debrief_agent_id) throw new Error('ELEVENLABS_DEBRIEF_AGENT_ID is not set in .env')
       // A dedicated debrief agent has the prompt in its dashboard; the interviewer agent needs it sent.
       const overrides = config.debrief_prompt_override
-        ? { agent: { prompt: { prompt: await (await fetch('/api/prompts/debrief/system.md')).text() }, firstMessage: '' } }
+        ? { agent: { prompt: { prompt: await (await fetch(api('/prompts/debrief/system.md'))).text() }, firstMessage: '' } }
         : undefined
       conversation.current = await Conversation.startSession({
         agentId: config.debrief_agent_id,
