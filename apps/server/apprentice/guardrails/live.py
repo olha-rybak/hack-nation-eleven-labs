@@ -47,12 +47,14 @@ class LiveGuardrails:
         self.known_max_facts, self.known_max_chars = known_max_facts, known_max_chars
         self._engines: dict[str, GuardrailEngine | None] = {}
         self._pending: dict[str, dict[str, set[str]]] = {}  # session -> entity -> guardrail ids
+        self._closed: dict[str, set[str]] = {}  # session -> entities saved or routed
 
     def attach(self, session_id: str, work_map_session_id: str) -> GuardrailEngine:
         """Raises KeyError (unknown session), NoWorkMap, NotConfirmed."""
         engine = GuardrailEngine(load_workmap(self.store, work_map_session_id))
         self._engines[session_id] = engine
         self._pending.pop(session_id, None)
+        self._closed.pop(session_id, None)
         return engine
 
     def engine(self, session_id: str) -> GuardrailEngine | None:
@@ -86,6 +88,10 @@ class LiveGuardrails:
         self, session_id: str, engine: GuardrailEngine, event: dict
     ) -> list[tuple[str, dict]]:
         entity, ts, event_id = event["entity"], event.get("ts_ms"), event.get("id")
+        key = _key(entity)
+        closed = self._closed.setdefault(session_id, set())
+        if key in closed:  # the case ended at a save or route, like the report's replay (T-303)
+            return []
         firing_before = engine.firing(entity)
         hits = engine.on_event(event)
         resolved = firing_before - engine.firing(entity)
@@ -93,8 +99,14 @@ class LiveGuardrails:
         # Save-triggered guardrails ("no asset number, no capex") would only fire on the save.
         # Report them as soon as saving would break them, resolved once it no longer would.
         pending = {h.guardrail_id: h for h in engine.pending(entity)}
-        was_pending = self._pending.setdefault(session_id, {}).get(_key(entity), set())
-        self._pending[session_id][_key(entity)] = set(pending)
+        was_pending = self._pending.setdefault(session_id, {}).get(key, set())
+        if event["kind"] == "route":
+            # Escalating is what a stop-and-ask rule wants: whatever was open on the case is done.
+            resolved |= engine.firing(entity) | was_pending | set(pending)
+            pending = {}
+        if event["kind"] in {"route", "save"}:
+            closed.add(key)
+        self._pending[session_id][key] = set(pending)
         hits += [h for gid, h in pending.items() if gid not in was_pending]
         resolved |= was_pending - set(pending)
 
