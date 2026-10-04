@@ -33,18 +33,45 @@ tutor session (POST /sessions role=tutor, work_map_id=<expert session>)
 
 ## ElevenLabs setup (dashboard, once)
 
-1. Create an agent. **LLM:** Claude Sonnet 5.5 or Haiku 4.5, low reasoning effort (turn-taking
-   latency matters more than depth here).
-2. **First message:** empty. **System prompt:** paste `prompts/tutor/system.md`.
-3. **Tools:** add two client tools, both "wait for response":
-   - `lookup_guardrail`, parameter `guardrail_id` (string): "Exact statement and the expert's words
-     for a guardrail id from the Work Map."
-   - `lookup_step`, parameter `index` (number): "Exact decision and the expert's words for a step."
-4. Keep authentication off (public agent) for local testing. Copy the agent ID into the repo-root
-   `.env` as `ELEVENLABS_TUTOR_AGENT_ID`. The browser reads it from `GET /config`.
+1. Create a blank agent. **LLM:** Claude Sonnet 5.5 (or Haiku 4.5), **reasoning effort: Low**:
+   turn-taking latency matters more than depth here.
+2. **First message:** empty, so the tutor waits until a cue arrives. **System prompt:** paste
+   `prompts/tutor/system.md`, and paste it again whenever that file changes; the browser does not
+   override the prompt.
+3. **Tools → Add tool → Client**, both with *Wait for response* on:
+   - `lookup_guardrail`, parameter `guardrail_id` (string, required): "Returns the exact statement
+     and the expert's verbatim words for a guardrail id from the Work Map. Use it before quoting a
+     guardrail, so the quote is exact."
+   - `lookup_step`, parameter `index` (integer, required): "Returns the exact decision and the
+     expert's verbatim words for a step of the Work Map, by its step number."
+4. **Tools → System tools:** turn on **Skip turn** only. The prompt tells the tutor to call it and
+   stay quiet when the new hire's turn has no words.
+5. **Settings → Advanced:**
+   - *Eagerness:* **Patient**, so a short pause does not end the new hire's turn.
+   - *Take turn after silence:* **-1** (disabled). The tutor never takes a turn just because the new
+     hire is quiet; it speaks on cues only.
+   - *Max conversation duration:* **1800** s. The default 600 s cuts the voice off in the middle of
+     a longer practice.
+   - *Client events:* add **`vad_score`**, so the browser can tell the pause detector when the new
+     hire is talking (`useTutor.ts`).
+6. **Security:** authentication off (public agent). Copy the agent ID into the repo-root `.env` as
+   `ELEVENLABS_TUTOR_AGENT_ID` (and into the deployed server's environment). The browser reads it from
+   `GET /config`.
+7. **Publish.** Changes stay a draft until then.
+
+## Check it
+
+1. Seed the demo expert session: `python3 scripts/seed_demo_session.py` (confirmed returns-desk Work
+   Map plus its screenshots), then open `/teach/demo-brandt`.
+2. *Open training case* opens the returns desk as the new hire (`/shop?case=training`). Share that tab.
+   The voice dock shows *Listening* once the agent is connected.
+3. Open RMA-2051, the case the expert never showed: a 279 EUR soundbar that arrived in a dented box,
+   so it is both a carrier claim and over the supervisor limit. Choose *Refund*. The tutor should
+   name only what you did and ask, e.g. "You're setting the resolution on RMA-2051 to Refund.
+   M. Brandt would stop here. Why do you think?". Answer out loud; it should confirm and end with
+   M. Brandt's exact words. Changing it to *Carrier claim* and escalating resolves both rules.
 
 ## Not done yet
 
-- `/teach` does not start a tutor session or use `useTutor` yet (T-301 wiring).
-- Acceptance (all three modes in a live run, every intervention ending with a verbatim quote) needs
-  the agent created as above.
+- Acceptance (all three modes in a live run, every intervention ending with a verbatim quote) and the
+  second-machine run with an intervention within ~2 s of the edit.
