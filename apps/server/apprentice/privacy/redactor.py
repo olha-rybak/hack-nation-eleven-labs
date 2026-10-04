@@ -28,7 +28,10 @@ def _key(entity_type: str, value: str) -> str:
 
 
 def _tesseract_available(cmd: str) -> bool:
-    import pytesseract
+    try:
+        import pytesseract
+    except ImportError:
+        return False
 
     if cmd:
         pytesseract.pytesseract.tesseract_cmd = cmd
@@ -85,25 +88,28 @@ class Redactor:
         self._analyzer = analyzer
         self._image_engine = image_engine
         self._ocr_ok: bool | None = True if image_engine is not None else None
+        self._missing: str | None = None  # why redaction is off although enabled
         self._maps: dict[str, dict[str, str]] = {}
         self._map_lock = threading.Lock()
         self._build_lock = threading.Lock()
 
     def status(self) -> str:
         if not self.enabled:
-            return "off"
+            return "unavailable" if self._missing else "off"
         return "on" if self._ocr_available() else "text-only"
 
     def warm_up(self) -> None:
         """Load spaCy and probe Tesseract at startup instead of on the first request."""
-        if self.enabled:
-            self._get_analyzer()
+        if self.enabled and self._get_analyzer() is not None:
             self._ocr_available()
 
     def text(self, session_id: str, s: str | None) -> str | None:
         if not self.enabled or not s:
             return s
-        found = self._get_analyzer().analyze(
+        analyzer = self._get_analyzer()
+        if analyzer is None:
+            return s
+        found = analyzer.analyze(
             text=s, language="en", entities=self.entities, score_threshold=self.threshold
         )
         taken = [m.span() for m in _PLACEHOLDER.finditer(s)]
@@ -119,7 +125,7 @@ class Redactor:
         return s
 
     def event(self, session_id: str, d: dict) -> dict:
-        if not self.enabled:
+        if not self.enabled or self._get_analyzer() is None:
             return d
         out = dict(d)
         for name in ("entity", "before", "after"):
@@ -135,10 +141,13 @@ class Redactor:
     def image(self, session_id: str, data: bytes) -> bytes:
         if not self.enabled or not self._ocr_available():
             return data
+        engine = self._get_image_engine()
+        if engine is None:
+            return data
         from PIL import Image
 
         with Image.open(io.BytesIO(data)) as img:
-            redacted = self._get_image_engine().redact(
+            redacted = engine.redact(
                 img.convert("RGB"),
                 fill=(0, 0, 0),
                 entities=self.entities,
@@ -157,17 +166,39 @@ class Redactor:
             return self._ocr_ok
 
     def _get_analyzer(self) -> Any:
+        """The Presidio analyzer, or None when Presidio or the spaCy model is not installed.
+        Then redaction switches itself off for the rest of the run, so a deploy without the
+        privacy extra still works; /health reports it as "unavailable"."""
         with self._build_lock:
-            if self._analyzer is None:
-                self._analyzer = _build_analyzer(self.spacy_model, self.phone_regions)
+            if self._analyzer is None and self.enabled:
+                try:
+                    self._analyzer = _build_analyzer(self.spacy_model, self.phone_regions)
+                except (ImportError, OSError) as e:  # OSError: spaCy model not downloaded
+                    self._switch_off(f"{type(e).__name__}: {e}")
             return self._analyzer
 
     def _get_image_engine(self) -> Any:
         analyzer = self._get_analyzer()
+        if analyzer is None:
+            return None
         with self._build_lock:
-            if self._image_engine is None:
-                self._image_engine = _build_image_engine(analyzer)
+            if self._image_engine is None and self._ocr_ok:
+                try:
+                    self._image_engine = _build_image_engine(analyzer)
+                except ImportError as e:
+                    self._ocr_ok = False
+                    log.warning("presidio-image-redactor missing (%s): frames stored unredacted", e)
             return self._image_engine
+
+    def _switch_off(self, reason: str) -> None:
+        self.enabled = False
+        self._missing = reason
+        log.warning(
+            "PII redaction is OFF: %s. Install it with `pip install -e '.[privacy]'` and "
+            "`python -m spacy download %s`, or set PRESIDIO_ENABLED=false to silence this.",
+            reason,
+            self.spacy_model,
+        )
 
     def _placeholder(self, session_id: str, entity_type: str, value: str) -> str:
         key = _key(entity_type, value)

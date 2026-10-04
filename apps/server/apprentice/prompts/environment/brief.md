@@ -14,5 +14,8 @@ Write at most about 400 words, in plain sentences and short lists. Cover, in thi
 
 End with one line that starts "Documented, do not ask about:" and lists what the pack covers.
 
+Write in English, but keep every on-screen name (screens, fields, values) exactly as the pack
+spells it, in the application's own language.
+
 Use only what is in the pack. Do not invent rules. Do not speculate about judgment calls the pack
 does not explain; leave them out.

@@ -13,7 +13,6 @@ export function Shell() {
         </Link>
         <nav aria-label="Modules">
           <NavLink to="/capture">Capture</NavLink>
-          <NavLink to={`/map/${session}`}>Work Map</NavLink>
           <NavLink to={`/vault/${session}`}>Vault</NavLink>
           <NavLink to={`/teach/${session}`}>Teach</NavLink>
         </nav>

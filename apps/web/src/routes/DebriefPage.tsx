@@ -11,7 +11,7 @@ import '../debrief/debrief.css'
 const voiceText: Record<DebriefVoiceStatus, string> = {
   off: 'Voice off',
   connecting: 'Connecting…',
-  listening: 'Listening',
+  listening: 'Mic off',
   speaking: 'Apprentice speaking',
   error: 'Voice failed',
 }
@@ -27,8 +27,8 @@ export function DebriefPage() {
     setFinishing(true)
     setFinishError(null)
     try {
-      await finishDebrief(sessionId)
-      navigate(`/rules/${encodeURIComponent(sessionId)}`)
+      const finished = await finishDebrief(sessionId)
+      navigate(`/rules/${encodeURIComponent(sessionId)}`, { state: { noWorkMap: finished === null } })
     } catch (err) {
       setFinishError(err instanceof Error ? err.message : String(err))
       setFinishing(false)
@@ -93,7 +93,7 @@ function Debrief({ sessionId, draft, initial, finishing, finishError, onFinish }
 
       {running && (
         <p className="debrief-why" role="status">
-          {voiceText[voice.status]}
+          {voice.micOpen ? 'Mic on: answer the question' : voiceText[voice.status]}
         </p>
       )}
       {voice.error && (

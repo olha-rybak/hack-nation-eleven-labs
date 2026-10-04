@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useLocation, useParams } from 'react-router'
 import { SessionLayout } from '../components/SessionLayout'
 import { agreeRule, deleteRule, fetchRulesToReview } from '../rules/api'
 import type { Fact } from '../types/knowledge'
@@ -13,7 +13,9 @@ export function RulesPage() {
   const [attempt, setAttempt] = useState(0)
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [done, setDone] = useState(0)
-  const mapPath = `/map/${encodeURIComponent(sessionId)}`
+  // Every debrief question skipped: nothing was explained, so no Work Map was saved.
+  const noWorkMap = (useLocation().state as { noWorkMap?: boolean } | null)?.noWorkMap === true
+  const nextPath = noWorkMap ? '/capture' : `/vault/${encodeURIComponent(sessionId)}`
 
   useEffect(() => {
     const controller = new AbortController()
@@ -59,9 +61,10 @@ export function RulesPage() {
             {facts.length
               ? 'The rules you agreed with are now what the apprentice knows. Deleted rules are gone.'
               : 'Everything the apprentice learned is already agreed.'}
+            {noWorkMap && ' No Work Map was saved for this session: every debrief question was skipped.'}
           </p>
-          <Link className="button" to={mapPath}>
-            Open the Work Map
+          <Link className="button" to={nextPath}>
+            {noWorkMap ? 'Start a new session' : 'Open the Work Map in the Vault'}
           </Link>
         </div>
       )}
@@ -71,7 +74,7 @@ export function RulesPage() {
             Rule {done + 1} of {facts.length}
           </p>
           <RuleCard key={current.id} fact={current} onDone={() => setDone((n) => n + 1)} />
-          <Link className="rules-later" to={mapPath}>
+          <Link className="rules-later" to={nextPath}>
             Review the rest later
           </Link>
         </div>
