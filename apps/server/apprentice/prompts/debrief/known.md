@@ -11,6 +11,8 @@ the same rule, the same limit, the same person. A related fact is not enough. "E
 is capex" does not answer "Who releases a held invoice?", and "Kessler double-bills in December" does
 not answer "What is the limit for a second approval?".
 
+The gap and the facts may be in different languages; judge by meaning, not wording.
+
 When in doubt, return null. Asking once more costs the expert a minute; skipping a real gap loses
 the rule.
 
