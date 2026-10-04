@@ -21,8 +21,12 @@ SESSION_ID = r"^[A-Za-z0-9_-]{1,64}$"
 
 @router.get("/config")
 def config() -> dict:
-    """Public settings for the test page. The agent ID is not a secret (the agent is public)."""
-    return {"agent_id": get_settings().ELEVENLABS_INTERVIEWER_AGENT_ID}
+    """Public settings for the browser. Agent IDs are not secrets (the agents are public)."""
+    s = get_settings()
+    return {
+        "agent_id": s.ELEVENLABS_INTERVIEWER_AGENT_ID,
+        "tutor_agent_id": s.ELEVENLABS_TUTOR_AGENT_ID,
+    }
 
 
 @router.post("/events")
