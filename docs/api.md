@@ -5,7 +5,7 @@ Run from `apps/server`: `uvicorn apprentice.main:app --port 8001`.
 The vision model runs separately in llama-server on `:8080`; see `.env.example`.
 
 ## Health
-`GET /health` → `{"server": "ok", "model": "ok" | "down", "presidio": "on" | "text-only" | "off"}` (`text-only`: Tesseract missing, frames are stored unmasked)
+`GET /health` → `{"server": "ok", "model": "ok" | "down", "presidio": "on" | "text-only" | "off" | "unavailable"}` (`text-only`: Tesseract missing, frames are stored unmasked; `unavailable`: enabled but Presidio or its spaCy model is not installed, nothing is redacted)
 
 ## Sessions
 - `POST /sessions` body `{"session_id"?: str, "role"?: "interviewer"|"tutor", "work_map_id"?: str}` → `{"session_id"}`.

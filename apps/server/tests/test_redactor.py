@@ -8,7 +8,6 @@ import httpx
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from PIL import Image, ImageDraw, ImageFont
 from test_ingest import REPLY, ok, wait_for, wired_client
 
 from apprentice import settings as settings_module
@@ -18,6 +17,11 @@ from apprentice.session.hub import Hub
 from apprentice.session.routes import router
 from apprentice.session.store import SessionStore
 from apprentice.settings import Settings
+
+# Pillow comes with the privacy extra; without it these tests are skipped, not broken.
+Image = pytest.importorskip("PIL.Image")
+ImageDraw = pytest.importorskip("PIL.ImageDraw")
+ImageFont = pytest.importorskip("PIL.ImageFont")
 
 
 @dataclass

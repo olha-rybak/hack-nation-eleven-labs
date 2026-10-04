@@ -51,7 +51,21 @@ vision step (teammate) --POST /events--> FastAPI (apps/server)
      record." No parameters.
 5. **Advanced → client events:** enable `vad_score`, so the capture page can tell the pause
    detector when the expert is talking (T-104).
-6. Copy the agent ID.
+6. **Less sensitive to noise** (same for the debrief agent): in *Advanced*, set turn eagerness to
+   *patient*, so a short pause or a sound doesn't end the expert's turn. If noise still triggers
+   replies, turn off interruptions there too. The SDK can't set these from code.
+7. Copy the agent ID.
+
+**Mic only for answers.** Both the capture page and the debrief keep the mic muted by default
+(`apps/web/src/lib/micGate.ts`). Live, it opens once the agent has finished saying a line that ends in
+`?`, and closes when the expert's answer arrives or after `ANSWER_WINDOW_SEC` (`.env`) without their
+voice. In the debrief it opens after every agent line until the closing one, with no time limit.
+While the mic is closed nothing reaches the agent, so:
+
+- a sound can't interrupt the agent or start a reply;
+- the pause detector gets no `user_speaking` from the expert, so a question can land while they talk
+  to someone else (it still waits for the screen to be still);
+- saying "off the record" or "pause" only works while the mic is open; the panel buttons always work.
 
 The capture page (`apps/web/src/capture/useInterviewer.ts`) implements both tools. `log_answer` posts
 to `/knowledge/answers`; if the agent never calls it, the page pairs question and answer from the
