@@ -1,0 +1,694 @@
+/* Returns desk: a modern customer-service admin. Scoped to .shop so the ERP keeps its own look. */
+
+.shop {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --rail: #eef0f4;
+  --line: #e3e6eb;
+  --line-strong: #cfd4dc;
+  --text: #16191f;
+  --text-2: #4b5363;
+  --text-3: #6b7280;
+  --accent: #2f5bea;
+  --accent-hover: #2349c9;
+  --accent-soft: #eaf0ff;
+  --ok: #18794e;
+  --ok-soft: #e7f6ee;
+  --warn: #a35200;
+  --warn-soft: #fff1e0;
+  --radius: 8px;
+  --shadow: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.04);
+  --shadow-pop: 0 12px 32px rgb(16 24 40 / 0.18), 0 2px 6px rgb(16 24 40 / 0.08);
+
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: 56px 1fr 32px;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color-scheme: light;
+  font-variant-numeric: tabular-nums;
+}
+
+.shop ::selection {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.shop :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Top bar */
+
+.shop-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.shop-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 650;
+  font-size: 15px;
+}
+
+.shop-mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--text);
+  color: #fff;
+}
+
+.shop-brand small {
+  font-weight: 450;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.shop-top-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.shop-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+.shop-avatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--rail);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+  flex: none;
+}
+
+.shop-avatar.lg {
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
+}
+
+.shop-linkbtn {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--text-3);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.shop-linkbtn:hover {
+  color: var(--text);
+}
+
+/* Frame */
+
+.shop-frame {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 0;
+}
+
+.shop-rail {
+  background: var(--rail);
+  border-right: 1px solid var(--line);
+  padding: 16px 10px;
+}
+
+.shop-rail h2 {
+  margin: 0 10px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.shop-navitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--text-2);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.shop-navitem:hover {
+  background: rgb(255 255 255 / 0.6);
+  color: var(--text);
+}
+
+.shop-navitem.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.shop-navitem .count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.shop-main {
+  overflow: auto;
+  padding: 20px 32px 32px;
+}
+
+.shop-page {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+/* Page header */
+
+.shop-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.shop-head h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shop-head p {
+  margin: 4px 0 0;
+  color: var(--text-2);
+}
+
+.shop-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  color: var(--text-2);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.shop-back:hover {
+  color: var(--text);
+}
+
+.shop-unsaved {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--warn);
+}
+
+/* Segmented tabs */
+
+.shop-tabs {
+  display: inline-flex;
+  padding: 3px;
+  margin-bottom: 12px;
+  background: var(--rail);
+  border-radius: 8px;
+}
+
+.shop-tabs button {
+  border: 0;
+  background: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 150ms ease-out, color 150ms ease-out;
+}
+
+.shop-tabs button[aria-selected='true'] {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+/* Table */
+
+.shop-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.shop-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.shop-table th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #fafbfc;
+}
+
+.shop-table th:first-child {
+  border-top-left-radius: var(--radius);
+}
+
+.shop-table th:last-child {
+  border-top-right-radius: var(--radius);
+}
+
+.shop-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.shop-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.shop-table tbody tr {
+  cursor: pointer;
+  transition: background 120ms ease-out;
+}
+
+.shop-table tbody tr:hover {
+  background: #f8f9fb;
+}
+
+.shop-table .num {
+  text-align: right;
+}
+
+.shop-table .sub {
+  display: block;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.shop-table .empty td {
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--text-3);
+  cursor: default;
+}
+
+.shop-id {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.shop-person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Badges */
+
+.shop-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 550;
+  white-space: nowrap;
+  background: var(--rail);
+  color: var(--text-2);
+}
+
+.shop-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.shop-badge.open {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.shop-badge.escalated {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.shop-badge.completed {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.shop-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+/* Detail */
+
+.shop-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 20px;
+  align-items: start;
+}
+
+.shop-col {
+  display: grid;
+  gap: 14px;
+}
+
+.shop-section {
+  padding: 14px 20px 16px;
+}
+
+.shop-section > h2 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.shop-fields {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 6px 16px;
+  margin: 0;
+}
+
+.shop-fields dt {
+  color: var(--text-3);
+}
+
+.shop-fields dd {
+  margin: 0;
+}
+
+.shop-message {
+  margin: 10px 0 0;
+  padding: 10px 14px;
+  background: #f8f9fb;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+}
+
+.shop-customer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.shop-customer strong {
+  display: block;
+  font-weight: 600;
+}
+
+.shop-customer span {
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.shop-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin-top: 10px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.shop-stats div {
+  background: var(--surface);
+  padding: 8px 12px;
+}
+
+.shop-stats dt {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.shop-stats dd {
+  margin: 2px 0 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* Form */
+
+.shop-form {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 12px 16px;
+  align-items: center;
+}
+
+.shop-form label {
+  color: var(--text-2);
+}
+
+.shop-form textarea {
+  align-self: stretch;
+}
+
+.shop input:not([type='checkbox']),
+.shop select,
+.shop textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+.shop input:not([type='checkbox']):hover,
+.shop select:hover,
+.shop textarea:hover {
+  border-color: #b4bbc6;
+}
+
+.shop input:not([type='checkbox']):focus,
+.shop select:focus,
+.shop textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.shop input:disabled,
+.shop select:disabled,
+.shop textarea:disabled {
+  background: #f3f4f6;
+  color: var(--text-3);
+  cursor: not-allowed;
+}
+
+.shop input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.shop-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+}
+
+/* Timeline */
+
+.shop-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.shop-log li {
+  position: relative;
+  padding-left: 18px;
+}
+
+.shop-log li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+
+.shop-log li:last-child::before {
+  background: var(--accent);
+}
+
+.shop-log time {
+  display: block;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* Buttons and action rows */
+
+.shop-form.stacked {
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.shop-form.stacked label + * {
+  margin-bottom: 8px;
+}
+
+.shop-actions,
+.shop-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shop-card-actions {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.shop-actions .spacer,
+.shop-card-actions .spacer {
+  flex: 1;
+}
+
+.shop-btn {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 150ms ease-out, border-color 150ms ease-out, transform 100ms ease-out;
+}
+
+.shop-btn:hover:not(:disabled) {
+  background: #f6f7f9;
+  border-color: #b4bbc6;
+}
+
+.shop-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.shop-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.shop-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.shop-btn.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* Dialog */
+
+.shop-dialog {
+  width: min(440px, calc(100vw - 32px));
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow-pop);
+  color: var(--text);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.shop-dialog::backdrop {
+  background: rgb(16 24 40 / 0.35);
+}
+
+.shop-dialog h2 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.shop-dialog .shop-form {
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.shop-dialog .shop-form label + * {
+  margin-bottom: 10px;
+}
+
+.shop-dialog .shop-actions {
+  margin-top: 8px;
+}
+
+/* Status line */
+
+.shop-status {
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12px;
+}
