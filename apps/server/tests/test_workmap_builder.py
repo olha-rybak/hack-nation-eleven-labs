@@ -293,6 +293,7 @@ def test_answer_errors(debrief_client):
     post = lambda body, sid="s1": client.post(f"/sessions/{sid}/debrief/answer", json=body)  # noqa: E731
     assert post({"gap_id": "gap-99", "text": "x", "ts_ms": 1}).status_code == 404
     assert post({"gap_id": gid, "text": "  ", "ts_ms": 1}).status_code == 422
+    assert post({"gap_id": gid, "text": "...", "ts_ms": 1}).status_code == 422
     assert post({"gap_id": gid, "text": "x"}).status_code == 422  # no ts_ms
     assert post({"gap_id": gid, "text": "x", "ts_ms": -1}).status_code == 422
     assert post({"gap_id": gid, "text": "x", "ts_ms": 1}).status_code == 200
