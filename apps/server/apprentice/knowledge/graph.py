@@ -71,6 +71,9 @@ class KnowledgeGraph:
     def facts(self) -> list[dict]:
         return list(self._facts.values())
 
+    def get(self, fid: str) -> dict | None:
+        return self._facts.get(fid)
+
     def add(self, nodes: list[str], question: str, quote: dict) -> dict:
         fid = fact_id(nodes)
         fact = self._facts.get(fid)

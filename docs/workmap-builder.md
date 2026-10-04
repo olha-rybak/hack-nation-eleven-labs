@@ -9,6 +9,11 @@ draft converts to a real `WorkMap` (T-200 schema).
 - `POST /sessions/{id}/workmap/draft` builds the draft, saves it as `workmap_draft.json` in the
   session folder, returns it. Takes ~10 s. 502 if the LLM returns nothing usable.
 - `GET /sessions/{id}/workmap/draft` returns the saved draft.
+- Building the draft also closes the gaps an **earlier session** already answered (T-110 knowledge
+  graph, `workmap/known.py`, prompt `prompts/debrief/known.md`). Candidates are facts about the same
+  things on screen with a quote from another session; one model call judges which fact answers which
+  gap. A closed gap gets `fact_id` and an answer with `source: "earlier_session"`, so the debrief
+  does not ask it. If that call fails, the draft is still saved and the debrief asks them.
 - `POST /sessions/{id}/debrief/answer` closes one gap (T-203) and returns the updated draft.
   Body `{"gap_id": "gap-2", "text": "<the expert's words>", "ts_ms": 512000}`, or
   `{"gap_id": "gap-2", "declined": true}` when the expert would rather not answer. The answer

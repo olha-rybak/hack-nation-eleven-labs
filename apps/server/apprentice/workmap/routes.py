@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import date
 
 from fastapi import APIRouter, HTTPException, Request
@@ -7,11 +8,12 @@ from pydantic import BaseModel, Field, model_validator
 from apprentice.knowledge.graph import nodes_for_event
 from apprentice.llm.structured import StructuredLlmError
 from apprentice.settings import get_settings
-from apprentice.workmap import debrief
+from apprentice.workmap import debrief, known
 from apprentice.workmap.builder import build_draft
 from apprentice.workmap.draft import DraftWorkMap, Gap, GapClosed
 from apprentice.workmap.schema import Quote, WorkMap
 
+log = logging.getLogger(__name__)
 router = APIRouter()
 
 DRAFT_FILE = "workmap_draft.json"
@@ -40,6 +42,14 @@ async def create_draft(session_id: str, request: Request) -> DraftWorkMap:
         )  # fmt: skip
     except (StructuredLlmError, ValueError) as e:
         raise HTTPException(502, f"could not build a draft: {e}") from None
+    s = get_settings()
+    try:
+        await known.close_known_gaps(
+            request.app.state.map_llm, draft, request.app.state.knowledge,
+            store.events(session_id), s.KNOWN_MAX_FACTS, s.KNOWN_MAX_CHARS,
+        )  # fmt: skip
+    except StructuredLlmError as e:  # the debrief then asks them; slower, not wrong
+        log.warning("could not check gaps against earlier sessions: %s", e)
     (d / DRAFT_FILE).write_text(draft.model_dump_json(indent=2), encoding="utf-8")
     return draft
 

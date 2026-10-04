@@ -55,6 +55,7 @@ class Gap(BaseModel):
     importance: int  # 1-5: how much the answer changes what a new hire could do
     status: GapStatus = "open"
     answer: Quote | None = None
+    fact_id: str | None = None  # answered from this knowledge-graph fact instead of asked
 
 
 class DraftWorkMap(BaseModel):

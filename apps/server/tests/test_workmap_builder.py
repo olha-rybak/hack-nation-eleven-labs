@@ -211,8 +211,11 @@ async def test_to_workmap_only_once_every_reason_is_filled():
 
 
 def test_route_builds_and_saves_draft(tmp_path):
+    from apprentice.knowledge.graph import KnowledgeGraph
+
     with TestClient(app) as client:
         app.state.store = store = SessionStore(tmp_path)
+        app.state.knowledge = KnowledgeGraph(tmp_path / "graph.json")
         app.state.map_llm = FakeLlm(llm_draft())
         store.create("s1")
         for e in EVENTS:
