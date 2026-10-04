@@ -26,7 +26,8 @@ draft converts to a real `WorkMap` (T-200 schema).
   pause log), guardrail gaps go first; if the draft has none, a general one (`gap-guardrail`) is added.
 - `POST /sessions/{id}/debrief/finish` ends the debrief, done or stopped early, and saves
   `workmap.json` → `{workmap, left_out}`. Steps and guardrails the expert never explained are left out
-  of the map (their titles in `left_out`), not invented. 409 if no step was explained at all.
+  of the map (their titles in `left_out`), not invented. 409 if no step was explained at all; the
+  web app then closes the debrief without a Work Map and goes on to the rule review.
 - `GET /sessions/{id}/workmap` the saved Work Map, 404 until the debrief finishes. The `/map/:id`
   page reads this.
 
