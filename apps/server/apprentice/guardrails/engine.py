@@ -143,6 +143,10 @@ class GuardrailEngine:
     def facts(self, entity: str) -> dict[str, Any]:
         return dict(self._state(entity).facts)
 
+    def firing(self, entity: str) -> set[str]:
+        """Edit-triggered guardrail ids currently violated on this entity."""
+        return set(self._state(entity).fired)
+
     def on_event(self, event: dict) -> list[Hit]:
         """Feed every accepted event; returns guardrails to act on now."""
         entity, kind = event["entity"], event["kind"]

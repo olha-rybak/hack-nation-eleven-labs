@@ -1,7 +1,7 @@
 import { api } from '../lib/api'
 
 // Server contract (apps/server/apprentice/capture/routes.py, session/routes.py):
-//   POST /sessions {role}                         -> {session_id}
+//   POST /sessions {role, work_map_id?}           -> {session_id}
 //   POST /ingest/frame?session_id&frame_ts        body = JPEG for a changed frame, empty when unchanged
 //   POST /sessions/:id/end                        stops the live ask-now loop
 // Paths are relative to the server root (lib/api.ts adds the base).
@@ -22,12 +22,18 @@ async function call(path: string, init: RequestInit): Promise<Response> {
   return res
 }
 
-export async function createSession(): Promise<string> {
+/** A tutor session teaches from the confirmed Work Map of `work_map_id`, an expert session (T-300). */
+export interface SessionOptions {
+  role: 'tutor'
+  work_map_id: string
+}
+
+export async function createSession(options?: SessionOptions): Promise<string> {
   if (useMock) return `local-${Date.now().toString(36)}`
   const res = await call('/sessions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ role: 'expert' }),
+    body: JSON.stringify(options ?? { role: 'expert' }),
   })
   const body = (await res.json()) as { session_id: string }
   return body.session_id

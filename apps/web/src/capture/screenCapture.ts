@@ -1,5 +1,5 @@
 import { hasChanged, THUMB_WIDTH, toThumb, type Thumb } from './changeDetect'
-import { createSession, endSession, postFrame } from './ingest'
+import { createSession, endSession, postFrame, type SessionOptions } from './ingest'
 
 const FPS = Number(import.meta.env.VITE_FRAME_FPS) || 1
 const MIN_CELLS = Number(import.meta.env.VITE_FRAME_CHANGE_MIN_CELLS) || 12
@@ -68,15 +68,30 @@ export class ScreenCapture {
     this.tick()
   }
 
-  static async start(onStats: (s: CaptureStats) => void, onEnded: () => void): Promise<ScreenCapture> {
+  static async start(
+    onStats: (s: CaptureStats) => void,
+    onEnded: () => void,
+    session?: SessionOptions,
+  ): Promise<ScreenCapture> {
+    // Chrome jumps to the shared tab by default. Staying here lets the voice agent open the mic
+    // first; Chrome pops the panel into its own window only when a tab using the mic is left.
+    const Controller = (globalThis as { CaptureController?: new () => { setFocusBehavior(b: 'no-focus-change'): void } })
+      .CaptureController
+    const controller = Controller ? new Controller() : undefined
+    try {
+      controller?.setFocusBehavior('no-focus-change')
+    } catch {
+      // Older Chrome only accepts this after sharing starts; it then switches tabs as before.
+    }
     const stream = await navigator.mediaDevices.getDisplayMedia({
       video: { displaySurface: 'browser', frameRate: { ideal: 5, max: 10 } },
       audio: false,
       selfBrowserSurface: 'exclude',
       surfaceSwitching: 'include',
+      controller,
     } as DisplayMediaStreamOptions)
     try {
-      const sessionId = await createSession()
+      const sessionId = await createSession(session)
       return new ScreenCapture(stream, sessionId, onStats, onEnded)
     } catch (err) {
       stream.getTracks().forEach((t) => t.stop())

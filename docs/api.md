@@ -8,8 +8,12 @@ The vision model runs separately in llama-server on `:8080`; see `.env.example`.
 `GET /health` → `{"server": "ok", "model": "ok" | "down", "presidio": "on" | "text-only" | "off" | "unavailable"}` (`text-only`: Tesseract missing, frames are stored unmasked; `unavailable`: enabled but Presidio or its spaCy model is not installed, nothing is redacted)
 
 ## Sessions
-- `POST /sessions` body `{"session_id"?: str, "role"?: "interviewer"|"tutor"}` → `{"session_id"}`.
+- `POST /sessions` body `{"session_id"?: str, "role"?: "interviewer"|"tutor", "work_map_id"?: str}` → `{"session_id"}`.
   Optional: `/ingest/frame` auto-creates an unknown session.
+  A `tutor` session needs `work_map_id`, the expert session holding the confirmed `workmap.json`
+  (422 missing, 404 no map, 409 unconfirmed); its events then run through the guardrails live (T-300).
+- `GET /sessions/{id}/workmap` → the session's `workmap.json` (written by `POST /sessions/{id}/debrief/finish`), 404 until there is one.
+- `GET /sessions/{id}/guardrails` → a tutor session's `guardrail_hit` / `guardrail_resolved` log.
 - `GET /sessions/{id}` → meta. `GET /sessions/{id}/events`, `GET /sessions/{id}/transcript`.
 - `POST /sessions/{id}/transcript` body `{"speaker", "ts_ms", "text"}` → appended and broadcast.
 - `GET /sessions/{id}/frames/{name}` → the stored JPEG (`name` from an event's `frame_ref`).
@@ -26,8 +30,30 @@ The vision model runs separately in llama-server on `:8080`; see `.env.example`.
 - The first frame of a session is the baseline; events start from the second changed frame.
 
 ## Live channel
-`WS /ws/session/{id}` — first message `{"type": "snapshot", "data": {"events": [...], "transcript": [...]}}`,
+`WS /ws/session/{id}` — first message `{"type": "snapshot", "data": {"events": [...], "transcript": [...], "guardrails": [...]}}`,
 then `{"type": "event" | "transcript" | ..., "data": ...}`.
+
+### Guardrails on a tutor session (T-300)
+Sent right after the event that caused them, so the tutor can speak before Save:
+```json
+{"type": "guardrail_hit", "data": {"guardrail_id": "g-capex-limit", "severity": "stop",
+ "statement": "...", "reason": {"text": "...", "speaker": "Sabine", "ts_ms": 195000, "source": "narration"},
+ "entity": "invoice 4471", "event_id": "e1", "frame_refs": ["frames/0000192000.jpg"],
+ "source_session_id": "<expert session>", "timing": "on_edit", "ts_ms": 61000,
+ "known": [{"id": "f3e1c0a9b2d", "text": "Why 0400? \"Over 5,000 it's capex.\" (Anna, 2026-10-04)"}]}}
+{"type": "guardrail_resolved", "data": {"guardrail_id": "g-capex-limit", "entity": "invoice 4471",
+ "event_id": "e1", "ts_ms": 64000}}
+```
+- `severity: "stop"` → the tutor interrupts at once, without waiting for a pause.
+- `frame_refs` are the expert's screen moments: `GET /sessions/{source_session_id}/frames/{name}`.
+- `known`: what experts said before about this event's supplier, field and values, from the
+  knowledge graph (T-110), same lines as `ask_now.known`. The tutor may quote these too.
+- `timing`: `on_edit` (edit-triggered), `pre_save` (saving now would break a save-triggered rule,
+  sent once when it becomes true), `on_save` (it was saved anyway).
+- `guardrail_resolved`: the rule is no longer violated (value fixed, missing field filled in). Only
+  this marks a hit as resolved; dismissing the evidence in the UI does not.
+- Hits and resolutions are logged per session (`guardrails.jsonl`) and removed by off the record
+  like the rest of the window.
 
 **Events are upserts by `id`.** Typing in one field is merged into one edit: the same `id` is sent again
 with a newer `after`. Clients must replace by `id`, not append.

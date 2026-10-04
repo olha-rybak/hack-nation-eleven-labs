@@ -28,4 +28,6 @@ def get_report(session_id: str, workmap_session: str, request: Request) -> Progr
         raise HTTPException(422, f"invalid work map: {e}") from None
     if workmap.confirmed_at is None:
         raise HTTPException(409, "work map is not confirmed")
-    return build_report(workmap, store.events(session_id))
+    # The history, not the folded events: a fixed edit keeps its id, and the report must still see
+    # the wrong value the new hire typed first.
+    return build_report(workmap, store.event_history(session_id))

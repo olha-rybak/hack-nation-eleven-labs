@@ -19,6 +19,7 @@ from apprentice.capture.routes import router as capture_router
 from apprentice.capture.vision import VisionService
 from apprentice.environment import get_brief, load_pack
 from apprentice.environment_routes import router as environment_router
+from apprentice.guardrails.live import LiveGuardrails
 from apprentice.interviewer import router as interviewer_router
 from apprentice.knowledge.graph import KnowledgeGraph
 from apprentice.knowledge.routes import router as knowledge_router
@@ -56,9 +57,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     def event_seen(session_id: str) -> None:  # an accepted event is screen activity
         pause.detector(session_id).on_screen_change(pause.clock())
 
-    app.state.vision = VisionService(
-        app.state.llm, app.state.store, app.state.hub, s, redactor, event_seen
+    app.state.guardrails = LiveGuardrails(
+        app.state.store, app.state.hub, app.state.knowledge, s.KNOWN_MAX_FACTS, s.KNOWN_MAX_CHARS
     )
+    app.state.vision = VisionService(
+        app.state.llm, app.state.store, app.state.hub, s, redactor, event_seen,
+        on_events=app.state.guardrails.on_events,
+    )  # fmt: skip
     app.state.map_llm = structured_llm(s)
     app.state.environment_brief = None
     app.state.environment_hash = None

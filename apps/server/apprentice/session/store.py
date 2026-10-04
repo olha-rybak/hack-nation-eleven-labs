@@ -38,7 +38,9 @@ class SessionStore:
             raise KeyError(session_id)
         return d
 
-    def create(self, session_id: str | None = None, role: str = "interviewer") -> str:
+    def create(
+        self, session_id: str | None = None, role: str = "interviewer", extra: dict | None = None
+    ) -> str:
         sid = session_id or uuid.uuid4().hex[:12]
         d = self._dir(sid)
         with self._lock(sid):
@@ -49,6 +51,7 @@ class SessionStore:
                     "session_id": sid,
                     "role": role,
                     "created_at": datetime.now(UTC).isoformat(),
+                    **(extra or {}),
                 }
                 meta.write_text(json.dumps(data), encoding="utf-8")
         return sid
@@ -119,6 +122,11 @@ class SessionStore:
             folded[ev.get("id")] = ev  # dict keeps first-insertion position
         return list(folded.values())
 
+    def event_history(self, session_id: str) -> list[dict]:
+        """Every version of every event, in arrival order: an edit corrected under the same id
+        (4711, then 0400) keeps both values, which a replay of the case needs."""
+        return self._read(session_id, "events.jsonl")
+
     def append_transcript(self, session_id: str, line: dict) -> None:
         self._append(session_id, "transcript.jsonl", line)
 
@@ -131,6 +139,13 @@ class SessionStore:
 
     def pause_log(self, session_id: str) -> list[dict]:
         return self._read(session_id, "pause.jsonl")
+
+    def append_guardrail(self, session_id: str, entry: dict) -> None:
+        """Guardrail hits and resolutions on a tutor session (T-300), for the report (T-303)."""
+        self._append(session_id, "guardrails.jsonl", entry)
+
+    def guardrails(self, session_id: str) -> list[dict]:
+        return self._read(session_id, "guardrails.jsonl")
 
     def archive(self, session_id: str) -> str:
         """Rename the session to <id>-<UTC timestamp>, freeing the id. Nothing is deleted."""
@@ -149,7 +164,7 @@ class SessionStore:
         with self._lock(session_id):
             files = {
                 name: self._load(d / f"{name}.jsonl")
-                for name in ("frames", "events", "transcript", "pause")
+                for name in ("frames", "events", "transcript", "pause", "guardrails")
             }
             stamps = [
                 e["ts_ms"]
@@ -200,6 +215,8 @@ class SessionStore:
                 ("pause", pause),
             ):
                 self._rewrite(d / f"{name}.jsonl", entries)
+            if files["guardrails"]:  # tutor sessions: hits quote the entity as it was on screen
+                self._rewrite(d / "guardrails.jsonl", keep(files["guardrails"]))
 
         return {
             "from_ts_ms": cutoff,

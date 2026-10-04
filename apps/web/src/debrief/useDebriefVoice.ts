@@ -1,7 +1,9 @@
 import { Conversation, type Mode } from '@elevenlabs/client'
 import { useEffect, useRef, useState } from 'react'
 import { MicGate } from '../lib/micGate'
+import { spoken } from '../lib/spoken'
 import type { DebriefStatus, DraftStep, DraftWorkMap, Gap } from '../types/draft'
+import type { TranscriptLine } from '../types/session'
 import { answerGap, fetchDebrief } from './api'
 import { DebriefTurns, nextGapText } from './turns'
 import { api } from '../lib/api'
@@ -27,6 +29,9 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
   const [debrief, setDebrief] = useState(initial)
   const [current, setCurrent] = useState<Gap | null>(null)
   const [micOpen, setMicOpen] = useState(false)
+  // What is said in the debrief, for the panel. It is not posted to the session transcript,
+  // which holds the capture conversation the Work Map is built from.
+  const [lines, setLines] = useState<TranscriptLine[]>([])
   const conversation = useRef<Conversation | null>(null)
   const asking = useRef<Gap | null>(null)
   const skipRef = useRef<() => void>(() => {})
@@ -115,11 +120,15 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
           }
         },
         onMessage: ({ message, role }) => {
+          const speaker = role === 'agent' ? 'agent' : 'expert'
+          const ts_ms = Math.round(performance.now() - t0)
+          setLines((l) => [...l, { id: `debrief-${l.length}`, speaker, text: message, ts_ms }])
           if (role !== 'agent') {
             gate.close()
             applyMic()
             return turns.expert(message)
           }
+          message = spoken(message)
           if (closing) {
             closingSaid = true
             gate.close()
@@ -159,5 +168,5 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
     }
   }
 
-  return { status, error, debrief, current, micOpen, start, skip: () => skipRef.current() }
+  return { status, error, debrief, current, micOpen, lines, start, skip: () => skipRef.current() }
 }
