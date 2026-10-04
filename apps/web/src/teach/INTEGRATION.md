@@ -18,8 +18,8 @@ real map evidence (or fixture data in VITE_MOCK=1), and reuses the capture hook/
 - T-300/T-302: intervention identity, matched rule/step, expert quote and frame
   timestamp/source session, and an explicit resolution update. Dismissing evidence
   is not resolution. The UI does not block ERP Save.
-- T-303: supplied mastered, missed and practice-next items, plus report-ready or
-  report-unavailable state. TutorReport is a UI view model; owners must agree a wire
+- T-303: supplied mastered, missed, guardrails hit with how each was resolved,
+  and practice-next items, plus report-ready or report-unavailable state. TutorReport is a UI view model; owners must agree a wire
   representation and adapter before integration.
 
 Confirm how source Work Map IDs resolve to session IDs, reconnect/replay ordering,

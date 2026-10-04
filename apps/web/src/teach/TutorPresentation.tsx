@@ -9,9 +9,15 @@ export interface TutorEvidence {
   decision: string
   quote: Quote
 }
+export interface TutorGuardrailOutcome {
+  statement: string
+  /** How the trainee resolved it, as supplied by the tutor (T-303). */
+  resolution: string
+}
 export interface TutorReport {
   mastered: string[]
   missed: string[]
+  guardrails?: TutorGuardrailOutcome[]
   practiceNext: string[]
 }
 export type TutorView =
@@ -55,6 +61,7 @@ export function TutorPresentation({ view, reason, onReason, onReveal, onContinue
     {view.kind === 'finished' && (view.report ? <div className="teach-report">
       <ReportList title="Mastered" items={view.report.mastered} empty="No mastered skills were reported." />
       <ReportList title="Needs another attempt" items={view.report.missed} empty="No missed skills were reported." />
+      <ReportList title="Guardrails hit" items={(view.report.guardrails ?? []).map(g => `${g.statement} — ${g.resolution}`)} empty="No guardrail outcomes were reported." />
       <ReportList title="Practise next" items={view.report.practiceNext} empty="No follow-up practice was supplied." />
     </div> : <p className="teach-notice" role="status">The tutor has not supplied a report yet. No assessment can be inferred from this session.</p>)}
     {/* Dismissing an intervention must never imply resolution. Only a new supplied view can do that. */}

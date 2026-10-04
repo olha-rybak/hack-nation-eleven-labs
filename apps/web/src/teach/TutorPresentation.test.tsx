@@ -24,10 +24,16 @@ describe('tutor presentation boundaries', () => {
     expect(html).toContain('has not supplied a report')
     expect(html).not.toContain('Mastered')
   })
+  it('does not invent guardrail outcomes when none are supplied', () => {
+    const html = render({ kind: 'finished', report: { mastered: [], missed: [], practiceNext: [] } })
+    expect(html).toContain('No guardrail outcomes were reported.')
+  })
   it('renders all supplied report sections', () => {
-    const html = render({ kind: 'finished', report: { mastered: ['A'], missed: ['B'], practiceNext: ['C'] } })
+    const html = render({ kind: 'finished', report: { mastered: ['A'], missed: ['B'], guardrails: [{ statement: 'RULE_X', resolution: 'RESOLVED_Y' }], practiceNext: ['C'] } })
     expect(html).toContain('Mastered')
     expect(html).toContain('Needs another attempt')
+    expect(html).toContain('Guardrails hit')
+    expect(html).toContain('RULE_X — RESOLVED_Y')
     expect(html).toContain('Practise next')
   })
 })

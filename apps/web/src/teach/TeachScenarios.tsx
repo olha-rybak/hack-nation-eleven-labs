@@ -33,7 +33,7 @@ export function TeachScenarios({ workMapId }: { workMapId: string }) {
   if (scenario === 'coaching') view = { kind: scenario, title: step?.title ?? 'No current step', stepNumber: step?.index ?? 0, totalSteps: map.steps.length, evidence }
   else if (scenario === 'prediction' || scenario === 'intervention') view = { kind: scenario, title: scenario === 'prediction' ? 'What would you do next?' : 'What would make the expert pause here?', prompt: 'Explain the checks you would make before committing your decision.', revealed, evidence }
   else if (scenario === 'resolved') view = { kind: scenario, title: 'Ready to continue.', message: 'Sample resolution: the tutor confirmed that the issue was addressed. This preview did not evaluate a real edit.' }
-  else if (scenario === 'finished') view = { kind: scenario, report: missing ? null : { mastered: ['Identified the invoice’s equipment purchase.'], missed: ['Did not check the asset number before choosing capex.'], practiceNext: ['Try another equipment invoice and explain the asset check.'] } }
+  else if (scenario === 'finished') view = { kind: scenario, report: missing ? null : { mastered: ['Identified the invoice’s equipment purchase.'], missed: ['Did not check the asset number before choosing capex.'], guardrails: guardrail ? [{ statement: guardrail.statement, resolution: 'Sample: stopped before Save and changed the coding.' }] : [], practiceNext: ['Try another equipment invoice and explain the asset check.'] } }
   else view = { kind: scenario, message: 'Sample connection failure. Your Work Map stays available.' }
 
   return <main className="teach-workspace">
