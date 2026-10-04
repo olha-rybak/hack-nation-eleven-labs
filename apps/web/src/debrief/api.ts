@@ -2,6 +2,7 @@ import type { DebriefStatus, DraftWorkMap } from '../types/draft'
 import type { Speaker, TranscriptLine } from '../types/session'
 import type { WorkMap } from '../types/workmap'
 import { api } from '../lib/api'
+import type { WorkMapChange } from './teachback'
 
 // Server routes (T-201, docs/workmap-builder.md):
 //   GET  /api/sessions/:id/workmap/draft -> the saved draft, 404 until one is built
@@ -9,6 +10,9 @@ import { api } from '../lib/api'
 //   GET  /api/sessions/:id/debrief       -> the gaps still to ask, in order, and whether it is done
 //   POST /api/sessions/:id/debrief/finish -> save the Work Map from what was explained, 409 if nothing was
 //   GET/POST /api/sessions/:id/debrief/transcript -> what was said in the debrief, apart from capture
+//   POST /api/sessions/:id/workmap/teachback -> the apprentice's explanation of the process (T-204)
+//   POST /api/sessions/:id/workmap/correct   -> the expert's correction applied to the Work Map
+//   POST /api/sessions/:id/workmap/confirm   -> stamp confirmed_at and freeze the Work Map
 
 function session(sessionId: string) {
   return api(`/sessions/${encodeURIComponent(sessionId)}`)
@@ -83,4 +87,25 @@ export async function postDebriefLine(sessionId: string, line: { speaker: Speake
     body: JSON.stringify(line),
   })
   if (!res.ok) throw new Error(`Saving the debrief line failed (${await detail(res)})`)
+}
+
+export async function fetchTeachBack(sessionId: string): Promise<string> {
+  const res = await fetch(`${session(sessionId)}/workmap/teachback`, { method: 'POST' })
+  if (!res.ok) throw new Error(`Preparing the teach-back failed (${await detail(res)})`)
+  return ((await res.json()) as { text: string }).text
+}
+
+export async function correctWorkMap(sessionId: string, text: string): Promise<WorkMapChange[]> {
+  const res = await fetch(`${session(sessionId)}/workmap/correct`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  })
+  if (!res.ok) throw new Error(`Applying the correction failed (${await detail(res)})`)
+  return ((await res.json()) as { changes: WorkMapChange[] }).changes
+}
+
+export async function confirmTeachBack(sessionId: string): Promise<void> {
+  const res = await fetch(`${session(sessionId)}/workmap/confirm`, { method: 'POST' })
+  if (!res.ok) throw new Error(`Confirming the Work Map failed (${await detail(res)})`)
 }

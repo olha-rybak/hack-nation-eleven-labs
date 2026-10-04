@@ -13,6 +13,11 @@ The vision model runs separately in llama-server on `:8080`; see `.env.example`.
   A `tutor` session needs `work_map_id`, the expert session holding the confirmed `workmap.json`
   (422 missing, 404 no map, 409 unconfirmed); its events then run through the guardrails live (T-300).
 - `GET /sessions/{id}/workmap` → the session's `workmap.json` (written by `POST /sessions/{id}/debrief/finish`), 404 until there is one.
+- `POST /sessions/{id}/workmap/teachback` → `{"text"}`: the apprentice's explanation of the process for the
+  teach-back, under a minute (T-204); falls back to a summary from the map if the LLM fails. 409 once confirmed.
+- `POST /sessions/{id}/workmap/correct` body `{"text"}` (the expert's words) → `{"workmap", "changes": [{target, ref, label,
+  field, before, after}]}`: the correction applied to the map, including a guardrail's check when a number changes.
+  502 if the LLM fails, 409 once confirmed.
 - `POST /sessions/{id}/workmap/confirm` → the Work Map with `confirmed_at` stamped (T-204), 404 without a map.
   Confirming twice keeps the first stamp. A confirmed map is frozen: `debrief/finish` then answers 409.
   Only a confirmed map can teach (tutor sessions, the report).

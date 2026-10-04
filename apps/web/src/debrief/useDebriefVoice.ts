@@ -4,7 +4,17 @@ import { MicGate } from '../lib/micGate'
 import { spoken } from '../lib/spoken'
 import type { DebriefStatus, DraftStep, DraftWorkMap, Gap } from '../types/draft'
 import type { TranscriptLine } from '../types/session'
-import { answerGap, fetchDebrief, fetchDebriefTranscript, postDebriefLine } from './api'
+import {
+  answerGap,
+  confirmTeachBack,
+  correctWorkMap,
+  fetchDebrief,
+  fetchDebriefTranscript,
+  fetchTeachBack,
+  finishDebrief,
+  postDebriefLine,
+} from './api'
+import { correctedCue, teachBackCue, TeachBackTurns, type WorkMapChange } from './teachback'
 import { DebriefTurns, nextGapText } from './turns'
 import { api } from '../lib/api'
 
@@ -12,7 +22,9 @@ import { api } from '../lib/api'
 //   next gap from GET /debrief  -> sendUserMessage(NEXT_GAP ...), the agent asks it
 //   agent's reply after answer  -> DebriefTurns: answered / declined / stop
 //   answered or declined        -> POST /debrief/answer, then the next gap
-//   nothing left, or stop       -> DEBRIEF_DONE, closing line, then onFinished (saves the Work Map)
+//   nothing left                -> save the Work Map, then the teach-back (T-204): TEACH_BACK, the
+//                                  expert confirms (confirmed_at) or corrects (edits to the map, CORRECTED)
+//   nothing explained, or stop  -> DEBRIEF_DONE, closing line, then onFinished(false)
 //   mic                         -> muted while the agent speaks and after the expert answered; open
 //                                  after each line the agent says, until the closing line (MicGate)
 
@@ -23,12 +35,18 @@ export function stepFor(draft: DraftWorkMap, gap: Gap): DraftStep | null {
   return draft.steps.find((s) => s.index === index) ?? null
 }
 
-export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial: DebriefStatus, onFinished: () => void) {
+export function useDebriefVoice(
+  sessionId: string,
+  draft: DraftWorkMap,
+  initial: DebriefStatus,
+  onFinished: (confirmed: boolean) => void,
+) {
   const [status, setStatus] = useState<DebriefVoiceStatus>('off')
   const [error, setError] = useState<string | null>(null)
   const [debrief, setDebrief] = useState(initial)
   const [current, setCurrent] = useState<Gap | null>(null)
   const [micOpen, setMicOpen] = useState(false)
+  const [teachBack, setTeachBack] = useState<{ text: string; changes: WorkMapChange[] } | null>(null)
   // What is said in the debrief, for the panel. It is not posted to the session transcript,
   // which holds the capture conversation the Work Map is built from.
   const [lines, setLines] = useState<TranscriptLine[]>([])
@@ -47,6 +65,7 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
   const conversation = useRef<Conversation | null>(null)
   const asking = useRef<Gap | null>(null)
   const skipRef = useRef<() => void>(() => {})
+  const confirmRef = useRef<() => void>(() => {})
 
   useEffect(() => () => void conversation.current?.endSession(), [])
 
@@ -61,6 +80,9 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
     const now = () => base + Math.round(performance.now() - t0)
     let closing = false // DEBRIEF_DONE sent, or the expert asked to stop
     let closingSaid = false
+    let phase: 'gaps' | 'teachback' = 'gaps'
+    let confirmed = false
+    const tb = new TeachBackTurns()
     // No answer window: the expert has nothing else to do, and a slow answer must not be cut off.
     const gate = new MicGate(Number.POSITIVE_INFINITY)
     let mic: boolean | null = null
@@ -87,8 +109,18 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
       const conv = conversation.current
       if (!conv) return
       if (!next.next) {
-        closing = true
-        conv.sendUserMessage('DEBRIEF_DONE')
+        // Save the Work Map, then explain it back (T-204). Nothing explained: just close.
+        const finished = await finishDebrief(sessionId)
+        if (!finished) {
+          closing = true
+          conv.sendUserMessage('DEBRIEF_DONE')
+          return
+        }
+        const text = await fetchTeachBack(sessionId)
+        phase = 'teachback'
+        setTeachBack({ text, changes: [] })
+        tb.cue()
+        conv.sendUserMessage(teachBackCue(text))
         return
       }
       const step = stepFor(draft, next.next)
@@ -103,6 +135,22 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
         turns.cue('') // ignore the rest of this gap's conversation
         await answerGap(sessionId, { gap_id: gap.id, declined: true })
         await advance()
+      })
+
+    const end = (wasConfirmed: boolean) => {
+      void conversation.current?.endSession()
+      conversation.current = null
+      setStatus('off')
+      setMicOpen(false)
+      onFinished(wasConfirmed)
+    }
+
+    // Without speaking: the button on the teach-back confirms the map as it is now.
+    confirmRef.current = () =>
+      serial(async () => {
+        await confirmTeachBack(sessionId)
+        confirmed = closing = true
+        end(true)
       })
 
     try {
@@ -125,11 +173,7 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
           applyMic()
           if (closing && closingSaid && mode === 'listening') {
             closing = closingSaid = false
-            void conversation.current?.endSession()
-            conversation.current = null
-            setStatus('off')
-            setMicOpen(false)
-            onFinished()
+            void queue.then(() => end(confirmed)) // after the confirm request, if one is pending
           }
         },
         onMessage: ({ message, role }) => {
@@ -138,6 +182,35 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
           setLines((l) => [...l, { id: `debrief-${l.length}`, speaker, text: message, ts_ms }])
           // Kept for the Rules page and a reopened debrief; the conversation goes on if it fails.
           postDebriefLine(sessionId, { speaker, text: message, ts_ms }).catch(() => {})
+          if (phase === 'teachback') {
+            if (role !== 'agent') {
+              gate.close()
+              applyMic()
+              return tb.expert(message)
+            }
+            message = spoken(message)
+            const verdict = closing ? null : tb.agent(message)
+            if (closing || verdict?.kind === 'confirmed') {
+              closing = closingSaid = true // "Great, that's confirmed." is the closing line
+              gate.close()
+              applyMic()
+              if (verdict) serial(async () => {
+                await confirmTeachBack(sessionId)
+                confirmed = true
+              })
+              return
+            }
+            gate.question(performance.now())
+            applyMic()
+            if (verdict?.kind === 'correct')
+              serial(async () => {
+                const changes = await correctWorkMap(sessionId, verdict.text)
+                setTeachBack((t) => t && { ...t, changes: [...t.changes, ...changes] })
+                tb.cue()
+                conversation.current?.sendUserMessage(correctedCue(changes))
+              })
+            return
+          }
           if (role !== 'agent') {
             gate.close()
             applyMic()
@@ -183,5 +256,16 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
     }
   }
 
-  return { status, error, debrief, current, micOpen, lines, start, skip: () => skipRef.current() }
+  return {
+    status,
+    error,
+    debrief,
+    current,
+    micOpen,
+    lines,
+    teachBack,
+    start,
+    skip: () => skipRef.current(),
+    confirm: () => confirmRef.current(),
+  }
 }
