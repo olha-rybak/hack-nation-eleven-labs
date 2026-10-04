@@ -39,6 +39,7 @@ const sourceLabel: Record<Quote['source'], string> = {
   live_question: 'live question',
   debrief: 'debrief',
   narration: 'while working',
+  earlier_session: 'earlier session',
 }
 
 function expertName(map: WorkMap): string {
