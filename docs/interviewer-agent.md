@@ -54,7 +54,11 @@ vision step (teammate) --POST /events--> FastAPI (apps/server)
 6. **Less sensitive to noise** (same for the debrief agent): in *Advanced*, set turn eagerness to
    *patient*, so a short pause or a sound doesn't end the expert's turn. If noise still triggers
    replies, turn off interruptions there too. The SDK can't set these from code.
-7. Copy the agent ID.
+7. **No "Are you still there?"** (same for the debrief and tutor agents): *Tools tab → Add tool →
+   Skip Turn*, and in *Advanced* set *Take turn after silence* to 30 s, the maximum. The timeout
+   can't be turned off, so after 30 s of silence the agent still gets a turn; the prompt tells it to
+   call `skip_turn` and say nothing. Without the tool it can only fill the silence with words.
+8. Copy the agent ID.
 
 **Mic only for answers.** Both the capture page and the debrief keep the mic muted by default
 (`apps/web/src/lib/micGate.ts`). Live, it opens once the agent has finished saying a line that ends in
