@@ -43,10 +43,15 @@ Draft shape (`apps/server/apprentice/workmap/draft.py`): same as the Work Map, p
 
 ## Voice debrief (T-203)
 
-`/debrief/:id` → **Start debrief** opens an ElevenLabs conversation (`useDebriefVoice.ts`) with
-`ELEVENLABS_DEBRIEF_AGENT_ID`, or the interviewer agent when that is empty, and
-`prompts/debrief/system.md` as a prompt override (enable *System prompt* and *First message*
-overrides in the agent's Security tab). The page cues one gap at a time:
+`/debrief/:id` → **Start debrief** opens an ElevenLabs conversation (`useDebriefVoice.ts`).
+
+Agent setup, once: create a second agent in ElevenLabs (same voice and LLM as the interviewer),
+paste `prompts/debrief/system.md` as its system prompt, leave the first message empty, and put its ID
+in `.env` as `ELEVENLABS_DEBRIEF_AGENT_ID`. Re-paste the prompt when the file changes. Without it,
+the interviewer agent is used with the debrief prompt sent as an override, which ElevenLabs rejects
+unless System prompt and First message overrides are enabled on that agent.
+
+The page cues one gap at a time:
 
 ```
 NEXT_GAP

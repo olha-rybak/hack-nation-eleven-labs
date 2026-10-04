@@ -26,6 +26,8 @@ def config() -> dict:
     return {
         "agent_id": s.ELEVENLABS_INTERVIEWER_AGENT_ID,
         "debrief_agent_id": s.ELEVENLABS_DEBRIEF_AGENT_ID or s.ELEVENLABS_INTERVIEWER_AGENT_ID,
+        # a debrief agent has the debrief prompt in its dashboard; the interviewer needs it sent
+        "debrief_prompt_override": not s.ELEVENLABS_DEBRIEF_AGENT_ID,
     }
 
 

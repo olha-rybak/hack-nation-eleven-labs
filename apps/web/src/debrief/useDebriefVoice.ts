@@ -73,13 +73,19 @@ export function useDebriefVoice(sessionId: string, draft: DraftWorkMap, initial:
       })
 
     try {
-      const config = (await (await fetch('/api/config')).json()) as { debrief_agent_id?: string }
-      if (!config.debrief_agent_id) throw new Error('ELEVENLABS_INTERVIEWER_AGENT_ID is not set in .env')
-      const prompt = await (await fetch('/api/prompts/debrief/system.md')).text()
+      const config = (await (await fetch('/api/config')).json()) as {
+        debrief_agent_id?: string
+        debrief_prompt_override?: boolean
+      }
+      if (!config.debrief_agent_id) throw new Error('ELEVENLABS_DEBRIEF_AGENT_ID is not set in .env')
+      // A dedicated debrief agent has the prompt in its dashboard; the interviewer agent needs it sent.
+      const overrides = config.debrief_prompt_override
+        ? { agent: { prompt: { prompt: await (await fetch('/api/prompts/debrief/system.md')).text() }, firstMessage: '' } }
+        : undefined
       conversation.current = await Conversation.startSession({
         agentId: config.debrief_agent_id,
         connectionType: 'webrtc',
-        overrides: { agent: { prompt: { prompt }, firstMessage: '' } },
+        overrides,
         onModeChange: ({ mode }: { mode: Mode }) => {
           setStatus(mode)
           if (closing && closingSaid && mode === 'listening') {
