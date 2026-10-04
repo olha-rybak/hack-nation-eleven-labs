@@ -122,6 +122,11 @@ class SessionStore:
             folded[ev.get("id")] = ev  # dict keeps first-insertion position
         return list(folded.values())
 
+    def event_history(self, session_id: str) -> list[dict]:
+        """Every version of every event, in arrival order: an edit corrected under the same id
+        (4711, then 0400) keeps both values, which a replay of the case needs."""
+        return self._read(session_id, "events.jsonl")
+
     def append_transcript(self, session_id: str, line: dict) -> None:
         self._append(session_id, "transcript.jsonl", line)
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ServerUnreachable } from './ingest'
+import { ServerUnreachable, type SessionOptions } from './ingest'
 import { ScreenCapture, type CaptureStats } from './screenCapture'
 
 export type CaptureState =
@@ -24,7 +24,7 @@ export function useScreenCapture() {
     })
   }
 
-  async function start() {
+  async function start(session?: SessionOptions) {
     if (!navigator.mediaDevices?.getDisplayMedia) {
       setState({ status: 'error', reason: 'unsupported' })
       return
@@ -34,6 +34,7 @@ export function useScreenCapture() {
       const capture = await ScreenCapture.start(
         (stats) => setState((s) => (s.status === 'live' && s.capture === capture ? { ...s, stats } : s)),
         () => finish(capture),
+        session,
       )
       current.current = capture
       setState({ status: 'live', capture, stats: { ...capture.stats }, paused: false })

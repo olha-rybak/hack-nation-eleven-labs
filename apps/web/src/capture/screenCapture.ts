@@ -1,5 +1,5 @@
 import { hasChanged, THUMB_WIDTH, toThumb, type Thumb } from './changeDetect'
-import { createSession, endSession, postFrame } from './ingest'
+import { createSession, endSession, postFrame, type SessionOptions } from './ingest'
 
 const FPS = Number(import.meta.env.VITE_FRAME_FPS) || 1
 const MIN_CELLS = Number(import.meta.env.VITE_FRAME_CHANGE_MIN_CELLS) || 12
@@ -68,7 +68,11 @@ export class ScreenCapture {
     this.tick()
   }
 
-  static async start(onStats: (s: CaptureStats) => void, onEnded: () => void): Promise<ScreenCapture> {
+  static async start(
+    onStats: (s: CaptureStats) => void,
+    onEnded: () => void,
+    session?: SessionOptions,
+  ): Promise<ScreenCapture> {
     const stream = await navigator.mediaDevices.getDisplayMedia({
       video: { displaySurface: 'browser', frameRate: { ideal: 5, max: 10 } },
       audio: false,
@@ -76,7 +80,7 @@ export class ScreenCapture {
       surfaceSwitching: 'include',
     } as DisplayMediaStreamOptions)
     try {
-      const sessionId = await createSession()
+      const sessionId = await createSession(session)
       return new ScreenCapture(stream, sessionId, onStats, onEnded)
     } catch (err) {
       stream.getTracks().forEach((t) => t.stop())
