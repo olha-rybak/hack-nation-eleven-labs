@@ -4,6 +4,8 @@ import type { CaptureStats } from './screenCapture'
 import type { useScreenCapture } from './useScreenCapture'
 import './capture.css'
 
+const WINDOW_SEC = Number(import.meta.env.VITE_OFF_THE_RECORD_WINDOW_SEC) || 30
+
 const errorText = {
   denied: 'Screen sharing was blocked. Choose a tab or window in the browser prompt and select Share.',
   unsupported: 'This browser cannot share a screen. Use a current version of Chrome, Edge or Safari on a computer.',
@@ -34,6 +36,7 @@ export function CaptureView({ capture }: { capture: ReturnType<typeof useScreenC
   const videoRef = useRef<HTMLVideoElement>(null)
   const live = state.status === 'live' || state.status === 'stopping'
   const paused = state.status === 'live' && state.paused
+  const [deskOpened, setDeskOpened] = useState(false)
 
   const stream = live ? state.capture.stream : null
   useEffect(() => {
@@ -59,7 +62,7 @@ export function CaptureView({ capture }: { capture: ReturnType<typeof useScreenC
           </div>
         </div>
         <StatsLine stats={state.stats} sessionId={state.capture.sessionId} />
-        <p className="cap-hint">Work in the shared tab as usual and talk through what you do. The apprentice asks at natural pauses.</p>
+        <p className="cap-hint">Once the apprentice is listening, switch to the shared tab. The panel follows in a small window. Work as usual and talk through what you do.</p>
       </div>
     )
   }
@@ -82,21 +85,40 @@ export function CaptureView({ capture }: { capture: ReturnType<typeof useScreenC
     )
   }
 
+  const requesting = state.status === 'requesting'
+
   return (
-    <div className="cap cap-intro">
-      <p className="cap-eyebrow">Capture</p>
+    <div className="cap cap-intro cap-start">
       <h1>Show the apprentice how you work.</h1>
       <p className="cap-tagline">Share the screen where you do the task. The apprentice watches and asks why at natural pauses.</p>
 
       <ol className="cap-steps">
         <li>
-          <strong>Open the app</strong> you work in, for the demo the returns desk in a new tab.
+          <p>
+            <strong>Open the app</strong> you work in. For the demo, that is the returns desk.
+          </p>
+          <a
+            className={deskOpened ? 'button ghost' : 'button'}
+            href="/shop"
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => setDeskOpened(true)}
+          >
+            Open the returns desk
+          </a>
         </li>
         <li>
-          <strong>Share that tab</strong> when the browser asks. Only the tab is recorded.
+          <p>
+            <strong>Share that tab</strong> when the browser asks. Only the tab is recorded.
+          </p>
+          <button type="button" className={deskOpened ? 'button' : 'button ghost'} onClick={() => void start()} disabled={requesting}>
+            {requesting ? 'Waiting for the browser…' : 'Share screen'}
+          </button>
         </li>
         <li>
-          <strong>Work as usual</strong> and say what you are doing.
+          <p>
+            <strong>Work as usual</strong> and say what you are doing.
+          </p>
         </li>
       </ol>
 
@@ -107,14 +129,9 @@ export function CaptureView({ capture }: { capture: ReturnType<typeof useScreenC
         </p>
       )}
 
-      <div className="cap-ctas">
-        <button type="button" className="button" onClick={() => void start()} disabled={state.status === 'requesting'}>
-          {state.status === 'requesting' ? 'Waiting for the browser…' : 'Share screen'}
-        </button>
-        <a className="button ghost" href="/shop" target="_blank" rel="noreferrer">
-          Open the returns desk
-        </a>
-      </div>
+      <p className="cap-privacy">
+        You can pause at any time. Say “off the record” to delete the last {WINDOW_SEC} seconds of screen and speech.
+      </p>
     </div>
   )
 }

@@ -18,7 +18,7 @@ export function Shell() {
         </nav>
         <div className="globalnav-end">
           <a className="globalnav-app" href="/shop" target="_blank" rel="noreferrer">
-            Open shop
+            Returns desk
           </a>
           <ThemeToggle />
         </div>

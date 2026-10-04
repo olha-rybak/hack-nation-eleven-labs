@@ -100,10 +100,15 @@ interface Props {
   summary?: string
   /** Grows with every new item; the pill counts what arrived while minimized. */
   activity?: number
+  /** Move into its own window by itself when the expert switches to another tab. */
+  autoPopOut?: boolean
   children: ReactNode
 }
 
-export function PanelWindow({ title, summary, activity = 0, children }: Props) {
+// Not yet in TypeScript's MediaSessionAction list.
+const AUTO_PIP = 'enterpictureinpicture' as MediaSessionAction
+
+export function PanelWindow({ title, summary, activity = 0, autoPopOut = false, children }: Props) {
   const [saved, setSaved] = useState<Saved>(load)
   const [live, setLive] = useState<Rect | null>(null)
   const [seen, setSeen] = useState(activity)
@@ -184,6 +189,29 @@ export function PanelWindow({ title, summary, activity = 0, children }: Props) {
     setOwn({ win, root })
     setMode('window')
   }
+
+  // Chrome calls this handler when the tab is hidden while the page uses the mic, and lets it
+  // open a picture-in-picture window without a click. Other browsers keep the manual button.
+  const popOut = useRef(openSeparate)
+  useEffect(() => {
+    popOut.current = openSeparate
+  })
+  const away = autoPopOut && mode !== 'window'
+  useEffect(() => {
+    if (!away || !('mediaSession' in navigator) || !window.documentPictureInPicture) return
+    try {
+      navigator.mediaSession.setActionHandler(AUTO_PIP, () => void popOut.current())
+    } catch {
+      return // The browser does not know the action.
+    }
+    return () => {
+      try {
+        navigator.mediaSession.setActionHandler(AUTO_PIP, null)
+      } catch {
+        // Nothing to clear.
+      }
+    }
+  }, [away])
 
   function bringBack() {
     own?.win.close()

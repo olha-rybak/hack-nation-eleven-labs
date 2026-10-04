@@ -1,12 +1,12 @@
-/* Obsidian-flavoured workspace. Accent and graph colours are scoped to .vault;
-   everything else comes from the global tokens so the theme toggle just works. */
+/* Obsidian-flavoured workspace. The accent follows the global pencil tokens; graph kind
+   colours are scoped to .vault. Everything else comes from the global tokens. */
 
 .v-loading {
   padding: 48px 24px;
 }
 
 .vault {
-  --accent: #7f6df2;
+  --accent: var(--link);
   --accent-soft: color-mix(in srgb, var(--accent) 13%, transparent);
   --accent-line: color-mix(in srgb, var(--accent) 38%, transparent);
   --v-side: var(--band-alt);
@@ -14,7 +14,7 @@
   --v-hover: color-mix(in srgb, var(--text) 6%, transparent);
   --v-code: color-mix(in srgb, var(--text) 5%, var(--card));
 
-  --g-index: #7f6df2;
+  --g-index: var(--text);
   --g-step: #5b8def;
   --g-judgment: #e0933a;
   --g-stop: #e5534b;
@@ -35,8 +35,6 @@
 }
 
 :root[data-theme='dark'] .vault {
-  --accent: #a88bfa;
-  --g-index: #a88bfa;
   --g-step: #7aa7ff;
   --g-judgment: #f2a950;
   --g-stop: #ff7a70;
@@ -49,8 +47,6 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .vault {
-    --accent: #a88bfa;
-    --g-index: #a88bfa;
     --g-step: #7aa7ff;
     --g-judgment: #f2a950;
     --g-stop: #ff7a70;
@@ -468,10 +464,10 @@ body.v-resizing {
   align-items: center;
   gap: 8px;
   padding: 6px 13px;
-  border: 1px solid var(--accent);
+  border: 1px solid transparent;
   border-radius: var(--r-sm);
-  background: var(--accent);
-  color: #fff !important;
+  background: var(--accent-gradient);
+  color: var(--primary-text) !important;
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
@@ -483,7 +479,7 @@ body.v-resizing {
 }
 
 .v-btn:hover {
-  filter: brightness(1.08);
+  filter: brightness(0.96);
 }
 
 .v-btn:active {
@@ -724,22 +720,23 @@ body.v-resizing {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--accent) !important;
+  color: var(--text) !important;
   font: inherit;
   letter-spacing: inherit;
   text-align: left;
   cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-underline-offset: 3px;
-  transition: text-decoration-color 120ms ease;
+  /* A highlighter stroke under the words, in the pencil gradient. */
+  background: var(--accent-gradient) no-repeat 0 100% / 100% 0.3em;
+  transition: background-size 160ms ease;
 }
 
 .v-link:hover {
-  text-decoration-color: currentColor;
+  background-size: 100% 100%;
+  color: var(--primary-text) !important;
 }
 
 .v-link.unresolved {
+  background: none;
   color: var(--muted) !important;
   cursor: help;
   opacity: 0.8;
