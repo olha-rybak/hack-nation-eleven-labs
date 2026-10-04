@@ -1,10 +1,11 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
-import { lastSession } from '../lib/lastSession'
+import { DEMO_SESSION, lastSession } from '../lib/lastSession'
 import { ThemeToggle } from './ThemeToggle'
 
 export function Shell() {
   useLocation() // re-read the last session on every navigation
-  const session = encodeURIComponent(lastSession())
+  const last = lastSession()
+  const session = encodeURIComponent(last)
   return (
     <div className="shell">
       <header className="globalnav">
@@ -13,6 +14,8 @@ export function Shell() {
         </Link>
         <nav aria-label="Modules">
           <NavLink to="/capture">Capture</NavLink>
+          {/* Back into the last session's debrief; it resumes at the next open question. */}
+          {last !== DEMO_SESSION && <NavLink to={`/debrief/${session}`}>Debrief</NavLink>}
           <NavLink to={`/vault/${session}`}>Vault</NavLink>
           <NavLink to={`/teach/${session}`}>Teach</NavLink>
         </nav>
