@@ -49,7 +49,7 @@ class Quote(_Model):
     text: NonBlank
     speaker: NonBlank
     ts_ms: FrameTs
-    source: Literal["live_question", "debrief", "narration"]
+    source: Literal["live_question", "debrief", "narration", "earlier_session"]
 
 
 class GuardrailCheck(_Model):

@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ENV_FILE, env_file_encoding="utf-8", extra="ignore")
 
     ELEVENLABS_INTERVIEWER_AGENT_ID: str = ""
+    ELEVENLABS_DEBRIEF_AGENT_ID: str = ""  # empty: the interviewer agent, prompt sent as override
     LLAMA_SERVER_URL: str = "http://127.0.0.1:8080"
     LLM_SLOTS: int = 1
     LLM_TIMEOUT_SEC: float = 60
@@ -20,6 +21,7 @@ class Settings(BaseSettings):
     PAUSE_SILENCE_SEC: float = 2
     ASK_COOLDOWN_SEC: float = 60
     MAX_LIVE_QUESTIONS: int = 5
+    DEBRIEF_MIN_IMPORTANCE: int = 3
     GUARDRAIL_BY_QUESTION: int = 4
     SESSIONS_DIR: str = "data/sessions"
     KNOWLEDGE_PATH: str = "data/knowledge/graph.json"

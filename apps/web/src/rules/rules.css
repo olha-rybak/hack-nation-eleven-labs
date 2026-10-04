@@ -1,0 +1,83 @@
+.placeholder .rules-count {
+  margin: 0 0 12px;
+  font: 600 14px/1.43 var(--font-text);
+  letter-spacing: -0.224px;
+}
+
+.placeholder .rules-rule {
+  font: 600 40px/1.1 var(--font-display);
+  letter-spacing: 0;
+}
+
+.rules-edit span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font: 400 14px/1.43 var(--font-text);
+  letter-spacing: -0.224px;
+}
+
+.rules-edit textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  font: 600 28px/1.14 var(--font-display);
+  resize: vertical;
+}
+
+.rules-sources {
+  margin: 32px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rules-sources li {
+  padding: 12px 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.rules-sources q {
+  display: block;
+  font: 400 17px/1.47 var(--font-text);
+  letter-spacing: -0.374px;
+}
+
+.placeholder .rules-meta,
+.rules-meta {
+  display: block;
+  margin: 4px 0 0;
+  color: var(--muted);
+  font: 400 14px/1.43 var(--font-text);
+  letter-spacing: -0.224px;
+}
+
+.rules-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.placeholder .rules-actions .button {
+  margin-top: 0;
+}
+
+.placeholder .rules-confirm {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--text);
+  font: 400 17px/1.47 var(--font-text);
+  letter-spacing: -0.374px;
+}
+
+.rules-later {
+  display: inline-block;
+  margin-top: 24px;
+  color: var(--link);
+  font: 400 14px/1.43 var(--font-text);
+}
