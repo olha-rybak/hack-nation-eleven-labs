@@ -1,5 +1,6 @@
 import asyncio
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -121,6 +122,29 @@ def test_hit_carries_what_experts_said_before_about_the_supplier(tmp_path):
     assert [k["text"] for k in hit["known"]] == [
         'Why 0400 for Weber? "Weber always sends machines, check the asset tag." (Anna, 2026-10-01)'
     ]
+
+
+def test_routing_to_a_supervisor_resolves_what_was_open(tmp_path):
+    """Returns desk: over 200 EUR must go to a supervisor. Routing it is the right move."""
+    store = SessionStore(tmp_path)
+    sid = store.create("brandt", "interviewer")
+    returns = Path(__file__).parent / "fixtures" / "workmap_returns.json"
+    shutil.copy(returns, store.session_dir(sid) / WORKMAP_FILE)
+    store.create("tutor1", "tutor", {"work_map_id": sid})
+    live = LiveGuardrails(store, RecordingHub())
+    rma = "Return RMA-2051"
+    case = {"Price paid": "279.00 EUR", "Reason": "Arrived damaged", "Returns (12 months)": "0"}
+    sent = run(
+        live, opened(rma, **case), edit(rma, "Resolution", "Select...", "Refund", "p1", 2000)
+    )
+    hit_ids = {d["guardrail_id"] for t, d in sent if t == "guardrail_hit"}
+    assert hit_ids == {"g-carrier-claim", "g-supervisor-limit"}
+    live.hub.sent.clear()
+    route = {"id": "r1", "ts_ms": 3000, "kind": "route", "entity": rma}
+    sent = run(live, route)
+    assert {d["guardrail_id"] for t, d in sent if t == "guardrail_resolved"} == hit_ids
+    live.hub.sent.clear()
+    assert run(live, edit(rma, "Resolution", "Refund", "Refund ", "p1", 4000)) == []
 
 
 def test_non_tutor_sessions_are_not_evaluated(tmp_path):
