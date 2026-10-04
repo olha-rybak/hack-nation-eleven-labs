@@ -1,5 +1,6 @@
 import type { DebriefStatus, DraftWorkMap } from '../types/draft'
 import type { WorkMap } from '../types/workmap'
+import { api } from '../lib/api'
 
 // Server routes (T-201, docs/workmap-builder.md):
 //   GET  /api/sessions/:id/workmap/draft -> the saved draft, 404 until one is built
@@ -8,7 +9,7 @@ import type { WorkMap } from '../types/workmap'
 //   POST /api/sessions/:id/debrief/finish -> save the Work Map from what was explained, 409 if nothing was
 
 function session(sessionId: string) {
-  return `/api/sessions/${encodeURIComponent(sessionId)}`
+  return api(`/sessions/${encodeURIComponent(sessionId)}`)
 }
 
 function path(sessionId: string) {

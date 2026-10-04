@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -85,6 +86,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="AI Apprentice", lifespan=lifespan)
+_origins = [o.strip() for o in settings.get_settings().CORS_ORIGINS.split(",") if o.strip()]
+if _origins:
+    app.add_middleware(
+        CORSMiddleware, allow_origins=_origins, allow_methods=["*"], allow_headers=["*"]
+    )
 app.include_router(session_router)
 app.include_router(capture_router)
 app.include_router(interviewer_router)

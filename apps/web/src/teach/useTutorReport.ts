@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { api } from '../lib/api'
 import type { TutorReport } from './TutorPresentation'
 
 // GET /sessions/:id/report?workmap_session=<expert session> (T-303): built on the server by
@@ -25,7 +26,7 @@ export function useTutorReport(sessionId: string | null, workMapId: string) {
     if (!sessionId) return
     const query = new URLSearchParams({ workmap_session: workMapId })
     let current = true
-    fetch(`/api/sessions/${encodeURIComponent(sessionId)}/report?${query}`)
+    fetch(api(`/sessions/${encodeURIComponent(sessionId)}/report?${query}`))
       .then((res) => (res.ok ? (res.json() as Promise<ProgressReport>) : null))
       .then((body) => current && setResult({ id: sessionId, report: body ? toTutorReport(body) : null }))
       .catch(() => current && setResult({ id: sessionId, report: null }))
