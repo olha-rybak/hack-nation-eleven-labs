@@ -128,6 +128,7 @@ export function CapturePanel(props: Props) {
               <li key={item.key} className={`cp-ask${out}`}>
                 <span>
                   Question {item.ask.question_index} of {item.ask.budget}
+                  {item.ask.guardrail && ' · guardrail'}
                 </span>
                 {about && (
                   <button type="button" className="link" onClick={() => highlight(about.id)}>

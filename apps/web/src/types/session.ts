@@ -32,6 +32,7 @@ export type EventCorrection = Partial<Pick<ScreenEvent, 'entity' | 'field' | 'be
 export interface AskCue {
   event_id: string
   subject: string
+  guardrail?: boolean
   question_index: number
   budget: number
   ts_ms: number
