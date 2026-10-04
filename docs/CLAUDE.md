@@ -21,7 +21,7 @@ Status: `planned` = not written yet, `draft` = exists, may change, `stable` = ot
 | [workmap-builder.md](workmap-builder.md) | Session → draft Work Map + ranked gaps; debrief answers, stopping rule, final Work Map; LLM config | T-201, T-203 | draft |
 | [environment-pack.md](environment-pack.md) | `config/environment/`: what is documented (and what is deliberately left out), brief + cache | T-109 | draft |
 | `question-selection.md` | How the one question is picked from events | T-108 | planned |
-| [knowledge-graph.md](knowledge-graph.md) | Facts from expert answers across sessions; the Known slice sent with ASK_NOW | T-110 | draft |
+| [knowledge-graph.md](knowledge-graph.md) | Facts from expert answers across sessions; the Known slice sent with ASK_NOW; rule review | T-110, T-205 | draft |
 | [returns-desk.md](returns-desk.md) | Returns desk sandbox app (`/shop`): expert rules, cases, training case, expert script | scenario | draft |
 
 ## Open decisions

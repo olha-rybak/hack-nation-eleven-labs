@@ -28,7 +28,7 @@ export function DebriefPage() {
     setFinishError(null)
     try {
       await finishDebrief(sessionId)
-      navigate(`/map/${encodeURIComponent(sessionId)}`)
+      navigate(`/rules/${encodeURIComponent(sessionId)}`)
     } catch (err) {
       setFinishError(err instanceof Error ? err.message : String(err))
       setFinishing(false)

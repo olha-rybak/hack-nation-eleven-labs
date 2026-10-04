@@ -81,8 +81,35 @@ class KnowledgeGraph:
             fact = {"id": fid, "nodes": sorted(nodes), "question": question, "quotes": []}
             self._facts[fid] = fact
         fact["quotes"].append(quote)
+        fact["agreed_at"] = None  # a new quote may change the rule: the expert reviews it again
         self._save()
         return fact
+
+    def unreviewed(self) -> list[dict]:
+        return [f for f in self._facts.values() if not f.get("agreed_at")]
+
+    def set_rules(self, rules: dict[str, str]) -> None:
+        """Fact id -> the rule in one plain sentence, as written for the expert to review."""
+        for fid, rule in rules.items():
+            if fid in self._facts:
+                self._facts[fid]["rule"] = rule
+        self._save()
+
+    def agree(self, fid: str, rule: str | None, when: str) -> dict:
+        """The expert agrees with the rule, in their own wording if they edited it. KeyError if
+        the fact is gone."""
+        fact = self._facts[fid]
+        if rule is not None:
+            fact["rule"] = rule
+            fact["edited"] = True
+        fact["agreed_at"] = when
+        self._save()
+        return fact
+
+    def delete(self, fid: str) -> None:
+        """KeyError if the fact is gone."""
+        del self._facts[fid]
+        self._save()
 
     def known(self, nodes: list[str], max_facts: int, max_chars: int) -> list[dict]:
         """Facts linked to `nodes`, as lines for the agent.

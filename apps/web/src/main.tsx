@@ -7,6 +7,7 @@ import { CapturePage } from './routes/CapturePage'
 import { DebriefPage } from './routes/DebriefPage'
 import { MapPage } from './routes/MapPage'
 import { NotFound } from './routes/NotFound'
+import { RulesPage } from './routes/RulesPage'
 import { TeachPage } from './routes/TeachPage'
 import { ShopApp } from './shop/ShopApp'
 import './styles/global.css'
@@ -21,6 +22,7 @@ createRoot(document.getElementById('root')!).render(
           <Route index element={<Navigate to="/capture" replace />} />
           <Route path="capture" element={<CapturePage />} />
           <Route path="debrief/:sessionId" element={<DebriefPage />} />
+          <Route path="rules/:sessionId" element={<RulesPage />} />
           <Route path="map/:sessionId" element={<MapPage />} />
           <Route path="teach/:workMapId" element={<TeachPage />} />
           <Route path="*" element={<NotFound />} />
