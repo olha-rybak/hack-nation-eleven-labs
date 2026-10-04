@@ -114,7 +114,7 @@ function Practice({ map, workMapId }: { map: WorkMap; workMapId: string }) {
 
   return <main className="teach-workspace">
     <header className="teach-heading"><div><p className="teach-eyebrow">Teach <span>/</span> Work Map {workMapId}</p><h1>{map.title}</h1><p className="teach-description">Practise on your screen. Compare your reasoning with the expert’s evidence.</p></div><span className="teach-preview-label">{localCapture ? 'Fixture map · local capture test' : 'Work Map review'}</span></header>
-    {!confirmed && <section className="teach-notice" role="alert"><strong>This Work Map has not been confirmed.</strong><p>Review it with the expert before starting a capture test.</p><Link className="teach-text-link" to={`/vault/${encodeURIComponent(workMapId)}`}>Review in Vault →</Link></section>}
+    {!confirmed && <section className="teach-notice" role="alert"><strong>This Work Map has not been confirmed.</strong><p>The expert confirms it at the end of the rule review. Only a confirmed map can teach.</p><Link className="teach-text-link" to={`/rules/${encodeURIComponent(workMapId)}`}>Go to the rule review →</Link></section>}
     {!step && <section className="teach-notice" role="alert"><strong>This Work Map has no steps.</strong><p>Return to the Work Map to check its contents. Practice cannot start yet.</p><Link className="teach-text-link" to={`/vault/${encodeURIComponent(workMapId)}`}>Open in Vault →</Link></section>}
     <div className="teach-session-toolbar">
       <span role="status">{finished ? 'Practice ended' : live ? capture.state.status === 'stopping' ? 'Stopping capture…' : 'Screen sharing active' : ended ? 'Screen sharing ended' : 'Ready to review'}</span>

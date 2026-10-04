@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 import { SessionLayout } from '../components/SessionLayout'
-import { agreeRule, deleteRule, fetchRulesToReview } from '../rules/api'
+import { agreeRule, confirmWorkMap, deleteRule, fetchRulesToReview } from '../rules/api'
+import { fetchWorkMap } from '../workmap/api'
 import type { Fact } from '../types/knowledge'
 import '../rules/rules.css'
 
@@ -63,9 +64,13 @@ export function RulesPage() {
               : 'Everything the apprentice learned is already agreed.'}
             {noWorkMap && ' No Work Map was saved for this session: every debrief question was skipped.'}
           </p>
-          <Link className="button" to={nextPath}>
-            {noWorkMap ? 'Start a new session' : 'Open the Work Map in the Vault'}
-          </Link>
+          {noWorkMap ? (
+            <Link className="button" to={nextPath}>
+              Start a new session
+            </Link>
+          ) : (
+            <ConfirmWorkMap sessionId={sessionId} />
+          )}
         </div>
       )}
       {state.status === 'ready' && current && (
@@ -80,6 +85,64 @@ export function RulesPage() {
         </div>
       )}
     </SessionLayout>
+  )
+}
+
+type ConfirmState = 'checking' | 'unconfirmed' | 'saving' | 'confirmed' | 'error'
+
+/** Confirming freezes the Work Map; only a confirmed map can teach the tutor (T-204). */
+function ConfirmWorkMap({ sessionId }: { sessionId: string }) {
+  const [state, setState] = useState<ConfirmState>('checking')
+  const [error, setError] = useState('')
+  useEffect(() => {
+    const controller = new AbortController()
+    fetchWorkMap(sessionId, controller.signal)
+      .then((map) => setState(map.confirmed_at ? 'confirmed' : 'unconfirmed'))
+      .catch(() => !controller.signal.aborted && setState('unconfirmed'))
+    return () => controller.abort()
+  }, [sessionId])
+  const vault = `/vault/${encodeURIComponent(sessionId)}`
+  if (state === 'checking') return <p role="status">Checking the Work Map…</p>
+  if (state === 'confirmed')
+    return (
+      <div className="rules-confirmed">
+        <p role="status">The Work Map is confirmed. The tutor can now teach from it.</p>
+        <div className="rules-actions">
+          <Link className="button" to={`/teach/${encodeURIComponent(sessionId)}`}>
+            Practise with the tutor
+          </Link>
+          <Link className="button ghost" to={vault}>
+            Open in the Vault
+          </Link>
+        </div>
+      </div>
+    )
+  return (
+    <div className="rules-confirmed">
+      <p>Confirm the Work Map when it is right. It is then frozen, and only a confirmed map can teach.</p>
+      <div className="rules-actions">
+        <button
+          type="button"
+          className="button"
+          disabled={state === 'saving'}
+          onClick={() => {
+            setState('saving')
+            confirmWorkMap(sessionId)
+              .then(() => setState('confirmed'))
+              .catch((e: unknown) => {
+                setError(e instanceof Error ? e.message : String(e))
+                setState('error')
+              })
+          }}
+        >
+          {state === 'saving' ? 'Confirming…' : 'Confirm the Work Map'}
+        </button>
+        <Link className="button ghost" to={vault}>
+          Open in the Vault first
+        </Link>
+      </div>
+      {state === 'error' && <p role="alert">{error}.</p>}
+    </div>
   )
 }
 

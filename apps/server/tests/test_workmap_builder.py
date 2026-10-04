@@ -231,11 +231,13 @@ def test_route_builds_and_saves_draft(tmp_path):
 @pytest.fixture
 def debrief_client(tmp_path):
     """A session with a saved draft: step 2 (the hold) has no reason yet."""
+    from apprentice.guardrails.live import LiveGuardrails
     from apprentice.knowledge.graph import KnowledgeGraph
 
     with TestClient(app) as client:
         app.state.store = store = SessionStore(tmp_path / "sessions")
         app.state.knowledge = KnowledgeGraph(tmp_path / "graph.json")
+        app.state.guardrails = LiveGuardrails(store, app.state.hub, app.state.knowledge)
         app.state.map_llm = FakeLlm(llm_draft())
         store.create("s1")
         for e in EVENTS:
@@ -353,3 +355,20 @@ def test_debrief_routes_end_in_a_saved_work_map(debrief_client):
     r = client.post("/sessions/s1/debrief/finish")
     assert r.status_code == 200 and r.json()["left_out"] == ["Hold invoice 4472"]
     assert client.get("/sessions/s1/workmap").json()["id"] == r.json()["workmap"]["id"]
+
+
+def test_confirming_stamps_and_freezes_the_work_map(debrief_client):
+    """T-204: only a confirmed map teaches; once confirmed, a new debrief cannot overwrite it."""
+    client, _ = debrief_client
+    assert client.post("/sessions/s1/workmap/confirm").status_code == 404  # no map yet
+    client.post(
+        "/sessions/s1/debrief/answer",
+        json={"gap_id": "gap-guardrail", "text": "Anything over 10,000 goes to Petra.", "ts_ms": 1},
+    )
+    assert client.post("/sessions/s1/debrief/finish").json()["workmap"]["confirmed_at"] is None
+    stamp = client.post("/sessions/s1/workmap/confirm").json()["confirmed_at"]
+    assert stamp and client.get("/sessions/s1/workmap").json()["confirmed_at"] == stamp
+    assert client.post("/sessions/s1/workmap/confirm").json()["confirmed_at"] == stamp
+    assert client.post("/sessions/s1/debrief/finish").status_code == 409
+    tutor = client.post("/sessions", json={"role": "tutor", "work_map_id": "s1"})
+    assert tutor.status_code == 200  # the tutor accepts the confirmed map
