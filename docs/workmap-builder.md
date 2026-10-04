@@ -15,6 +15,15 @@ draft converts to a real `WorkMap` (T-200 schema).
   becomes a `Quote` with `source: "debrief"`; it fills the reason of the gap's guardrail, or else its
   step, if that reason is still missing, and is added to the knowledge graph (T-110).
   404 unknown session, draft or gap; 409 gap already closed; 422 no text or `ts_ms`.
+- `GET /sessions/{id}/debrief` → `{next, queue, left, done, guardrail_needed}`: the open gaps with
+  importance ≥ `DEBRIEF_MIN_IMPORTANCE` (default 3) in asking order, `next` = the one to ask now, `left`
+  = the "3 gaps left" counter. If the live session asked no guardrail question (`guardrail` in the
+  pause log), guardrail gaps go first; if the draft has none, a general one (`gap-guardrail`) is added.
+- `POST /sessions/{id}/debrief/finish` ends the debrief, done or stopped early, and saves
+  `workmap.json` → `{workmap, left_out}`. Steps and guardrails the expert never explained are left out
+  of the map (their titles in `left_out`), not invented. 409 if no step was explained at all.
+- `GET /sessions/{id}/workmap` the saved Work Map, 404 until the debrief finishes. The `/map/:id`
+  page reads this.
 
 Draft shape (`apps/server/apprentice/workmap/draft.py`): same as the Work Map, plus
 

@@ -40,6 +40,15 @@ export interface Gap {
   answer: Quote | null // the expert's debrief answer, once answered
 }
 
+/** GET /sessions/:id/debrief */
+export interface DebriefStatus {
+  next: Gap | null
+  queue: Gap[] // every gap still to ask, in asking order
+  left: number
+  done: boolean
+  guardrail_needed: boolean
+}
+
 export interface DraftWorkMap {
   id: string
   session_id: string

@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     PAUSE_SILENCE_SEC: float = 2
     ASK_COOLDOWN_SEC: float = 60
     MAX_LIVE_QUESTIONS: int = 5
+    DEBRIEF_MIN_IMPORTANCE: int = 3
     GUARDRAIL_BY_QUESTION: int = 4
     SESSIONS_DIR: str = "data/sessions"
     KNOWLEDGE_PATH: str = "data/knowledge/graph.json"
