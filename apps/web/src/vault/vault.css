@@ -84,9 +84,59 @@
 /* Panes */
 
 .v-panes {
+  position: relative;
   display: grid;
-  grid-template-columns: 268px minmax(0, 1fr) clamp(320px, 30vw, 440px);
+  grid-template-columns: var(--v-left, 268px) minmax(0, 1fr) var(--v-right, 400px);
   min-height: 0;
+}
+
+.v-split {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 5;
+  width: 10px;
+  transform: translateX(-50%);
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.v-split-left {
+  left: var(--v-left, 268px);
+}
+
+.v-split-right {
+  left: calc(100% - var(--v-right, 400px));
+}
+
+.v-split::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%) scaleY(0.4);
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 160ms ease, transform 220ms ease;
+}
+
+.v-split:hover::after,
+.v-split:focus-visible::after,
+.v-split[data-dragging]::after {
+  opacity: 1;
+  transform: translateX(-50%) scaleY(1);
+}
+
+.v-split:focus-visible {
+  outline: none;
+}
+
+body.v-resizing {
+  cursor: col-resize;
+  user-select: none;
 }
 
 .v-pane {
@@ -1009,6 +1059,10 @@
 
   .v-panes {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .v-split {
+    display: none;
   }
 
   .v-pane {
