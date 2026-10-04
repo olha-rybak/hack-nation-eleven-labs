@@ -29,7 +29,7 @@ describe('live intervention', () => {
 
   it('says resolved only when the server resolved it, ending with the exact quote', () => {
     const html = render(new Set([hitKey(hit)]))
-    expect(html).toContain('Fixed before saving.')
+    expect(html).toContain('Handled before saving.')
     expect(html).toContain(rule.reason.text.replaceAll("'", '&#x27;'))
   })
 

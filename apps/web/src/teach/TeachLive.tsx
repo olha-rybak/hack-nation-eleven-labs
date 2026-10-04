@@ -23,7 +23,7 @@ export function TeachLive({ intervention, map, revealed, onReveal, onClose }: {
   const ts = hitFrameTs(hit, map)
   const quote = hit.reason
   const view: TutorView = intervention.resolved
-    ? { kind: 'resolved', title: 'Fixed before saving.', message: `${hit.entity} no longer breaks the rule. In ${quote.speaker}’s words: “${quote.text}”` }
+    ? { kind: 'resolved', title: 'Handled before saving.', message: `${hit.entity} no longer breaks the rule. In ${quote.speaker}’s words: “${quote.text}”` }
     : {
         kind: 'intervention',
         title: `${quote.speaker} would stop here.`,
