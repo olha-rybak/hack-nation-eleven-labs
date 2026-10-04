@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { CaptureView } from '../capture/CaptureView'
 import { useScreenCapture } from '../capture/useScreenCapture'
 import { useWorkMap } from '../workmap/useWorkMap'
 import type { WorkMap } from '../types/workmap'
 import { TeachEvidence } from './TeachEvidence'
+import { TeachLive } from './TeachLive'
+import { TutorPresentation } from './TutorPresentation'
+import { useTutor, type TutorStatus } from './useTutor'
+import { useTutorReport } from './useTutorReport'
 import './teach.css'
 
 const localCapture = import.meta.env.VITE_MOCK === '1'
@@ -13,6 +17,13 @@ const captureErrors = {
   unsupported: 'Screen sharing is unavailable in this browser. Open this page in a desktop browser with screen-sharing support.',
   offline: 'The recording server is unreachable. Retry when it is available.',
   failed: 'Screen sharing could not start. You can still review the Work Map.',
+}
+const voiceText: Record<TutorStatus, string> = {
+  off: 'Not connected',
+  connecting: 'Connecting…',
+  listening: 'Listening',
+  speaking: 'Speaking',
+  error: 'Voice failed',
 }
 
 export function TeachWorkspace({ workMapId }: { workMapId: string }) {
@@ -36,6 +47,7 @@ function LoadedWorkspace({ workMapId, retry }: { workMapId: string; retry: () =>
 
 function Practice({ map, workMapId }: { map: WorkMap; workMapId: string }) {
   const capture = useScreenCapture()
+  const navigate = useNavigate()
   const mounted = useRef(true)
   useEffect(() => {
     mounted.current = true
@@ -43,7 +55,8 @@ function Practice({ map, workMapId }: { map: WorkMap; workMapId: string }) {
   }, [])
   // A browser chooser can resolve after navigation. Close that late stream too.
   async function startCapture() {
-    await capture.start()
+    // Server mode starts a tutor session on this Work Map, so its events run through the guardrails.
+    await capture.start(localCapture ? undefined : { role: 'tutor', work_map_id: workMapId })
     if (!mounted.current) await capture.stop()
   }
   const [stepIndex, setStepIndex] = useState(0)
@@ -70,7 +83,14 @@ function Practice({ map, workMapId }: { map: WorkMap; workMapId: string }) {
   const live = capture.state.status === 'live' || capture.state.status === 'stopping'
   const ended = capture.state.status === 'ended'
   const confirmed = Boolean(map.confirmed_at)
-  const canShare = localCapture && confirmed && Boolean(step) && !finished
+  const canShare = confirmed && Boolean(step) && !finished
+  const state = capture.state
+  const tutor = useTutor(
+    !localCapture && state.status === 'live' ? state.capture.sessionId : null,
+    state.status === 'live' ? state.capture.startedAt : null,
+    map,
+  )
+  const report = useTutorReport(!localCapture && finished && state.status === 'ended' ? state.sessionId : null, workMapId)
 
   function selectStep(index: number) {
     focusTarget.current = 'heading'
@@ -102,15 +122,16 @@ function Practice({ map, workMapId }: { map: WorkMap; workMapId: string }) {
             {!finished && <div className="teach-start-actions"><button className="teach-button teach-primary" type="button" disabled={!canShare || capture.state.status === 'requesting'} onClick={() => void startCapture()}>{capture.state.status === 'requesting' ? 'Choose a screen in your browser…' : ended ? 'Share screen again' : 'Share screen'}</button><a className="teach-text-link" href="/erp?case=training" target="_blank" rel="noreferrer">Open training case ↗</a></div>}
             {finished && <button className="teach-button teach-primary" type="button" onClick={restart}>Start another practice</button>}
             {capture.state.status === 'error' && <p className="teach-capture-error" role="alert">{captureErrors[capture.state.reason]}</p>}
-            {!localCapture && !finished && <p className="teach-capture-error">Tutor capture is awaiting the session interface. The existing capture API starts expert sessions, so recording is disabled here.</p>}
+            {!localCapture && !finished && <small>The tutor watches the shared tab and speaks up before a step the expert would stop at. It uses your microphone.</small>}
             {localCapture && !finished && <small>Screen capture uses the existing local test loop. No frames leave this browser; microphone and tutor voice are not connected.</small>}
             {ended && <small>{capture.state.status === 'ended' && `${capture.state.stats.ticks} frames checked · ${capture.state.stats.changed} changed · ${capture.state.stats.failed} failed`}</small>}
           </div>
         </div>}
-        <div className="teach-voice-dock teach-glass"><div><strong>Voice tutor</strong><span>Not connected · Work Map review only</span></div><span className="teach-dock-marker" aria-hidden="true" /></div>
+        <div className="teach-voice-dock teach-glass"><div><strong>Voice tutor</strong><span role="status">{localCapture ? 'Not connected · local capture test' : `${voiceText[tutor.status]}${tutor.error ? ` (${tutor.error})` : ''}`}</span></div><span className="teach-dock-marker" aria-hidden="true" /></div>
       </section>
       <aside className="teach-guidance" aria-label="Tutor guidance">
-        {finished ? <section aria-label="Practice report"><p className="teach-eyebrow">End of practice</p><h2 tabIndex={-1} ref={guidanceHeading}>Report not available yet.</h2><p className="teach-guidance-description">No tutor assessment was received. Reviewing evidence or ending a capture does not establish which skills you mastered.</p><Link className="teach-text-link" to={`/map/${encodeURIComponent(workMapId)}`}>Return to Work Map →</Link></section> : step ? <>
+        {finished && report.status === 'ready' ? <TutorPresentation view={{ kind: 'finished', report: report.report }} reason="" onReason={() => {}} onReveal={() => {}} onContinue={() => navigate(`/map/${encodeURIComponent(workMapId)}`)} /> : finished && report.status === 'loading' ? <p role="status">Building your practice report…</p> : finished ? <section aria-label="Practice report"><p className="teach-eyebrow">End of practice</p><h2 tabIndex={-1} ref={guidanceHeading}>Report not available yet.</h2><p className="teach-guidance-description">No tutor assessment was received. Reviewing evidence or ending a capture does not establish which skills you mastered.</p><Link className="teach-text-link" to={`/map/${encodeURIComponent(workMapId)}`}>Return to Work Map →</Link></section> : step ? <>
+          <TeachLive hits={tutor.hits} resolved={tutor.resolved} map={map} />
           <div className="teach-guidance-head"><label className="teach-eyebrow" htmlFor="teach-step">Step {stepIndex + 1} of {steps.length}</label><span className="teach-step-mark">Manual review</span></div>
           <select className="teach-step-select" id="teach-step" value={stepIndex} onChange={e => selectStep(Number(e.target.value))}>{steps.map((s, index) => <option key={s.index} value={index}>{s.index}. {s.title}</option>)}</select>
           <h2 tabIndex={-1} ref={guidanceHeading}>{step.title}</h2><p className="teach-guidance-description">Step selection is manual. Live step alignment and prediction prompts have not been connected.</p>
@@ -124,6 +145,6 @@ function Practice({ map, workMapId }: { map: WorkMap; workMapId: string }) {
         </> : <p>No guidance is available until this Work Map contains steps.</p>}
       </aside>
     </div>
-    <footer className="teach-footer"><span>{localCapture ? 'Fixture data from the existing Work Map API' : `Expert session ${map.session_id}`}</span><span>Voice, automatic interventions and assessment are awaiting owner integration.</span></footer>
+    <footer className="teach-footer"><span>{localCapture ? 'Fixture data from the existing Work Map API' : `Expert session ${map.session_id}`}</span><span>{localCapture ? 'Local capture test: no tutor session, interventions or report.' : 'Interventions come from the guardrail engine; the report from the server.'}</span></footer>
   </main>
 }

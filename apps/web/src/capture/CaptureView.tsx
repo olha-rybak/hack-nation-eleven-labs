@@ -108,7 +108,7 @@ export function CaptureView({ capture }: { capture: ReturnType<typeof useScreenC
       )}
 
       <div className="cap-ctas">
-        <button type="button" className="button" onClick={start} disabled={state.status === 'requesting'}>
+        <button type="button" className="button" onClick={() => void start()} disabled={state.status === 'requesting'}>
           {state.status === 'requesting' ? 'Waiting for the browser…' : 'Share screen'}
         </button>
         <a className="button ghost" href="/erp" target="_blank" rel="noreferrer">

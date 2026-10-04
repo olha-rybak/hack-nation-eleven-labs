@@ -25,6 +25,16 @@ export interface GuardrailResolved {
   ts_ms: number | null
 }
 
+export const hitKey = (h: { guardrail_id: string; entity: string }) => `${h.guardrail_id}|${h.entity}`
+
+/** The expert's screen moment for a hit: the guardrail's own frame, else the first frame ref. */
+export function hitFrameTs(hit: GuardrailHit, map: WorkMap): number | null {
+  const rule = map.guardrails.find((g) => g.id === hit.guardrail_id)
+  if (rule) return rule.frame_ts
+  const m = hit.frame_refs[0]?.match(/(\d+)\.jpg$/)
+  return m ? Number(m[1]) : null
+}
+
 function clock(ms: number): string {
   const s = Math.floor(ms / 1000)
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
