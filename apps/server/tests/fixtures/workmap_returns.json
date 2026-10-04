@@ -1,0 +1,168 @@
+{
+  "id": "wm-returns-001",
+  "session_id": "sess-brandt-001",
+  "title": "Processing five open returns at Lumen Home & Tech",
+  "created_at": "2026-10-03T10:00:00Z",
+  "confirmed_at": "2026-10-03T10:40:00Z",
+  "steps": [
+    {
+      "index": 1,
+      "title": "Open RMA-1041 and check the reason",
+      "frame_ts": 30000,
+      "frame_ref": "frames/0000030000.jpg",
+      "decision": "Defect, inside the window, normal customer: replacement first",
+      "reason": {
+        "text": "Headphones, one ear died after a week, ordered eleven days ago. That is a plain defect, so I send a replacement first.",
+        "speaker": "M. Brandt",
+        "ts_ms": 31000,
+        "source": "narration"
+      },
+      "guardrail_ids": [],
+      "is_judgment_call": false
+    },
+    {
+      "index": 2,
+      "title": "RMA-1042: damaged lamp, carrier claim",
+      "frame_ts": 62000,
+      "frame_ref": "frames/0000062000.jpg",
+      "decision": "Crushed box, shattered shade: Carrier claim, not a refund",
+      "reason": {
+        "text": "See the crushed box and the customer photo? That happened on the truck, so it is a carrier claim. We never pay that out of our own pocket.",
+        "speaker": "M. Brandt",
+        "ts_ms": 63500,
+        "source": "live_question"
+      },
+      "guardrail_ids": [
+        "g-carrier-claim"
+      ],
+      "is_judgment_call": true
+    },
+    {
+      "index": 3,
+      "title": "RMA-1043: refund with restocking fee, escalate",
+      "frame_ts": 95000,
+      "frame_ref": "frames/0000095000.jpg",
+      "decision": "Refund minus the 15 % fee, then escalate to a supervisor",
+      "reason": {
+        "text": "It is opened and he just changed his mind, so the 15 % restocking fee applies. And over two hundred euros I never complete myself, that goes to a supervisor.",
+        "speaker": "M. Brandt",
+        "ts_ms": 97000,
+        "source": "live_question"
+      },
+      "guardrail_ids": [
+        "g-supervisor-limit",
+        "g-restocking-fee"
+      ],
+      "is_judgment_call": true
+    },
+    {
+      "index": 4,
+      "title": "RMA-1044: possible abuse",
+      "frame_ts": 128000,
+      "frame_ref": "frames/0000128000.jpg",
+      "decision": "Escalate as possible abuse instead of refunding",
+      "reason": {
+        "text": "Nine returns out of ten orders. I do not refund that, I escalate it as possible abuse.",
+        "speaker": "M. Brandt",
+        "ts_ms": 129500,
+        "source": "debrief"
+      },
+      "guardrail_ids": [
+        "g-abuse"
+      ],
+      "is_judgment_call": false
+    },
+    {
+      "index": 5,
+      "title": "RMA-1045: goodwill refund for a loyal customer",
+      "frame_ts": 160000,
+      "frame_ref": "frames/0000160000.jpg",
+      "decision": "Goodwill refund of 45.00, outside the window",
+      "reason": {
+        "text": "She has been with us since 2017, 41 orders and not one return. Four days late on a kettle, I give her the goodwill refund.",
+        "speaker": "M. Brandt",
+        "ts_ms": 161500,
+        "source": "debrief"
+      },
+      "guardrail_ids": [],
+      "is_judgment_call": true
+    }
+  ],
+  "guardrails": [
+    {
+      "id": "g-carrier-claim",
+      "kind": "never_do",
+      "statement": "Damaged in transit is a carrier claim, never a refund or replacement from our own pocket.",
+      "frame_ts": 62000,
+      "reason": {
+        "text": "Damaged in transit is the carrier's problem. I never refund or replace that from our own pocket, I file a carrier claim.",
+        "speaker": "M. Brandt",
+        "ts_ms": 64000,
+        "source": "live_question"
+      },
+      "step_index": 2,
+      "check": {
+        "trigger_kind": "edit",
+        "entity_pattern": "RMA-\\d+",
+        "field": "Resolution",
+        "condition": "reason == 'Arrived damaged' and after != 'Carrier claim'",
+        "severity": "stop"
+      }
+    },
+    {
+      "id": "g-supervisor-limit",
+      "kind": "limit",
+      "statement": "Any return over 200 EUR goes to a supervisor; never complete it yourself.",
+      "frame_ts": 96000,
+      "reason": {
+        "text": "Anything over two hundred euros goes to a supervisor. I never complete those myself.",
+        "speaker": "M. Brandt",
+        "ts_ms": 98000,
+        "source": "live_question"
+      },
+      "step_index": 3,
+      "check": {
+        "trigger_kind": "save",
+        "entity_pattern": "RMA-\\d+",
+        "field": "",
+        "condition": "amount > 200",
+        "severity": "stop"
+      }
+    },
+    {
+      "id": "g-abuse",
+      "kind": "stop_and_ask",
+      "statement": "A customer who returned most of their orders is not refunded; escalate as possible abuse.",
+      "frame_ts": 129000,
+      "reason": {
+        "text": "When someone has sent back most of what they ordered, I do not refund. I escalate it as possible abuse.",
+        "speaker": "M. Brandt",
+        "ts_ms": 130500,
+        "source": "debrief"
+      },
+      "step_index": 4,
+      "check": {
+        "trigger_kind": "edit",
+        "entity_pattern": "RMA-\\d+",
+        "field": "Resolution",
+        "condition": "returns_12m >= 5 and after in ('Refund', 'Goodwill refund')",
+        "severity": "stop"
+      }
+    },
+    {
+      "id": "g-restocking-fee",
+      "kind": "exception",
+      "statement": "Opened electronics returned for 'changed my mind' get a 15 % restocking fee; defects never do.",
+      "frame_ts": 100000,
+      "reason": {
+        "text": "If it is opened and they just changed their mind, 15 % restocking fee. A defect never gets a fee.",
+        "speaker": "M. Brandt",
+        "ts_ms": 101500,
+        "source": "live_question"
+      },
+      "step_index": 3,
+      "check": null
+    }
+  ],
+  "open_questions": []
+}

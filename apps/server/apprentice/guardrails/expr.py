@@ -22,6 +22,7 @@ VARIABLES = frozenset(
     {
         "amount", "after", "before", "field", "supplier", "cost_center", "asset_number",
         "month", "country", "second_approval", "is_new_supplier", "is_group_company",
+        "reason", "packaging", "resolution", "orders_12m", "returns_12m",
     }
 )  # fmt: skip
 

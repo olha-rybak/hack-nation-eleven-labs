@@ -28,6 +28,7 @@ export function CapturePage() {
   const navigate = useNavigate()
   const { state } = capture
   const live = state.status === 'live'
+  const paused = live && state.paused
   // Keep the panel on the session after Stop, so its record stays readable.
   const sessionId =
     state.status === 'live' || state.status === 'stopping'
@@ -36,21 +37,31 @@ export function CapturePage() {
         ? state.sessionId
         : null
   const feed = useSessionFeed(sessionId)
-  const voice = useInterviewer(live ? state.capture.sessionId : null, live ? state.capture.startedAt : null)
+  const offTheRecord = () => {
+    if (state.status !== 'live') return Promise.reject(new Error('Not recording'))
+    return feed.offTheRecord(WINDOW_SEC)
+  }
+  const voice = useInterviewer(live ? state.capture.sessionId : null, live ? state.capture.startedAt : null, {
+    paused,
+    onOffTheRecord: offTheRecord,
+  })
 
   const panel = (
     <CapturePanel
       live={live}
+      paused={paused}
       events={feed.events}
       transcript={feed.transcript}
       asks={feed.asks}
       leaving={feed.leaving}
       lastRemoved={feed.lastRemoved}
       correctEvent={feed.correctEvent}
-      onOffTheRecord={() => {
-        if (state.status !== 'live') return Promise.reject(new Error('Not recording'))
-        return feed.offTheRecord(WINDOW_SEC)
+      onPauseToggle={() => {
+        if (state.status !== 'live') return
+        if (state.paused) capture.resume()
+        else capture.pause()
       }}
+      onOffTheRecord={offTheRecord}
       onEndTask={async () => {
         if (state.status !== 'live') return
         const id = state.capture.sessionId
@@ -71,8 +82,8 @@ export function CapturePage() {
       <CaptureView capture={capture} />
       {live && (
         <p className="cap-hint" role="status">
-          {voiceText[voice.status]}
-          {voice.error && ` (${voice.error})`}
+          {paused ? 'Recording paused' : voiceText[voice.status]}
+          {!paused && voice.error && ` (${voice.error})`}
         </p>
       )}
     </SessionLayout>

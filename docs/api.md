@@ -13,6 +13,9 @@ The vision model runs separately in llama-server on `:8080`; see `.env.example`.
 - `GET /sessions/{id}` → meta. `GET /sessions/{id}/events`, `GET /sessions/{id}/transcript`.
 - `POST /sessions/{id}/transcript` body `{"speaker", "ts_ms", "text"}` → appended and broadcast.
 - `GET /sessions/{id}/frames/{name}` → the stored JPEG (`name` from an event's `frame_ref`).
+- `GET /sessions/{id}/report?workmap_session=<expert id>` → progress report `{mastered, missed, guardrails[], practice_next}`
+  from replaying the session's events against the expert's confirmed `workmap.json` (404 missing, 409 unconfirmed).
+- `GET /environment/brief` → `{hash, brief, ready}`; the brief is written in the background after startup (T-109).
 - Session ids: `[A-Za-z0-9_-]{1,64}`.
 
 ## Frames in (T-101 → T-103)

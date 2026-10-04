@@ -14,24 +14,38 @@ type Item =
 
 interface Props {
   live: boolean
+  paused: boolean
   events: ScreenEvent[]
   transcript: TranscriptLine[]
   asks: AskCue[]
   leaving: Set<string>
   lastRemoved: OffRecordRemoved | null
   correctEvent: (id: string, patch: EventCorrection) => Promise<ScreenEvent>
+  onPauseToggle: () => void
   onOffTheRecord: () => Promise<OffRecordRemoved>
   onEndTask: () => void
 }
 
+function removedNotice(r: OffRecordRemoved): string {
+  const n = r.deleted_event_ids.length
+  const reverted = r.reverted_events.length
+  return (
+    `Removed the last ${WINDOW_SEC} s: ${n} ${n === 1 ? 'event' : 'events'}, ` +
+    `${r.transcript} ${r.transcript === 1 ? 'line' : 'lines'}, ${r.frames} ${r.frames === 1 ? 'frame' : 'frames'}` +
+    (reverted ? `; ${reverted} ${reverted === 1 ? 'event' : 'events'} back to the earlier value` : '') +
+    '. Deleted from disk.'
+  )
+}
+
 export function CapturePanel(props: Props) {
-  const { events, transcript, asks, leaving, live } = props
+  const { events, transcript, asks, leaving, live, paused } = props
   const [editing, setEditing] = useState<string | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
   const [busy, setBusy] = useState<'off' | 'end' | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const listRef = useRef<HTMLOListElement>(null)
   const pinned = useRef(true)
+  const shownRemoved = useRef<OffRecordRemoved | null>(null)
 
   const askedIds = new Set(asks.map((a) => a.event_id))
   const asked = asks.length ? Math.max(...asks.map((a) => a.question_index)) : 0
@@ -56,6 +70,14 @@ export function CapturePanel(props: Props) {
     return () => clearTimeout(id)
   }, [notice])
 
+  // Button and voice both update lastRemoved; show the notice once per removal.
+  useEffect(() => {
+    const r = props.lastRemoved
+    if (!r || r === shownRemoved.current) return
+    shownRemoved.current = r
+    setNotice(removedNotice(r))
+  }, [props.lastRemoved])
+
   function highlight(eventId: string) {
     setFlash(eventId)
     // The panel may live in its own window, so look in the list's document.
@@ -66,15 +88,8 @@ export function CapturePanel(props: Props) {
   async function offTheRecord() {
     setBusy('off')
     try {
-      const r = await props.onOffTheRecord()
-      const n = r.deleted_event_ids.length
-      const reverted = r.reverted_events.length
-      setNotice(
-        `Removed the last ${WINDOW_SEC} s: ${n} ${n === 1 ? 'event' : 'events'}, ` +
-          `${r.transcript} ${r.transcript === 1 ? 'line' : 'lines'}, ${r.frames} ${r.frames === 1 ? 'frame' : 'frames'}` +
-          (reverted ? `; ${reverted} ${reverted === 1 ? 'event' : 'events'} back to the earlier value` : '') +
-          '. Deleted from disk.',
-      )
+      await props.onOffTheRecord()
+      // Notice comes from the lastRemoved effect (also covers the voice path).
     } catch (e) {
       setNotice(`${e instanceof Error ? e.message : 'Off the record failed'}. Nothing was removed.`)
     } finally {
@@ -167,13 +182,21 @@ export function CapturePanel(props: Props) {
       </ol>
 
       <footer className="cp-foot">
+        {paused && (
+          <p className="cp-notice" role="status">
+            Paused: nothing is being recorded, mic muted.
+          </p>
+        )}
         {notice && (
           <p className="cp-notice" role="status">
             {notice}
           </p>
         )}
         <div className="cp-actions">
-          <button type="button" className="button ghost" onClick={offTheRecord} disabled={!live || busy !== null}>
+          <button type="button" className="button ghost" onClick={props.onPauseToggle} disabled={!live || busy !== null}>
+            {paused ? 'Resume recording' : 'Pause recording'}
+          </button>
+          <button type="button" className="button ghost" onClick={offTheRecord} disabled={!live || paused || busy !== null}>
             {busy === 'off' ? 'Removing…' : 'Off the record'}
           </button>
           <button
@@ -188,7 +211,10 @@ export function CapturePanel(props: Props) {
             {busy === 'end' ? 'Ending…' : 'End task'}
           </button>
         </div>
-        <p className="cp-fine">Off the record deletes the last {WINDOW_SEC} seconds of screen and speech. End task starts the debrief.</p>
+        <p className="cp-fine">
+          Pause stops capture and mutes the mic. Say “off the record” or use the button to delete the last {WINDOW_SEC}{' '}
+          seconds of screen and speech. End task starts the debrief.
+        </p>
       </footer>
     </aside>
   )
