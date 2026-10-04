@@ -2,12 +2,17 @@ import { Conversation, type Mode } from '@elevenlabs/client'
 import { useEffect, useState } from 'react'
 import type { ScreenEvent } from '../types/session'
 import { AnswerPairer } from './answers'
+import { SpeechTracker } from './speech'
 
 // The voice side of a live capture, same contract as the server's interviewer test page:
 //   screen events      -> sendContextualUpdate (silent background context)
 //   ask_now from server -> sendUserMessage("ASK_NOW" + Known list), the agent asks one question
 //   what is said       -> POST /sessions/:id/transcript, agent mode -> POST /sessions/:id/signals
+//   expert voice (VAD) -> POST /sessions/:id/signals {user_speaking}, so no question lands mid-sentence
 //   question + answer  -> POST /knowledge/answers, so the next session doesn't ask it again
+
+const VAD_THRESHOLD = Number(import.meta.env.VITE_VAD_SPEECH_THRESHOLD) || 0.5
+const VAD_RELEASE_MS = Number(import.meta.env.VITE_VAD_RELEASE_MS) || 400
 
 export type InterviewerStatus = 'off' | 'connecting' | 'listening' | 'speaking' | 'error'
 
@@ -64,6 +69,11 @@ export function useInterviewer(sessionId: string | null, startedAt: number | nul
     let closed = false
     const sentEvents = new Set<string>()
     const pairer = new AnswerPairer()
+    const speech = new SpeechTracker(VAD_THRESHOLD, VAD_RELEASE_MS)
+    const userSpeaking = (speaking: boolean | null) => {
+      if (speaking !== null) post(`/sessions/${sid}/signals`, { user_speaking: speaking })
+    }
+    const release = setInterval(() => userSpeaking(speech.expire(performance.now())), 200)
 
     const forward = (e: ScreenEvent) => {
       if (sentEvents.has(e.id)) return
@@ -84,6 +94,7 @@ export function useInterviewer(sessionId: string | null, startedAt: number | nul
             setStatus(mode)
             post(`/sessions/${sid}/signals`, { agent_speaking: mode === 'speaking' })
           },
+          onVadScore: ({ vadScore }: { vadScore: number }) => userSpeaking(speech.score(vadScore, performance.now())),
           onMessage: ({ message, role }) => {
             const speaker = role === 'agent' ? 'agent' : 'expert'
             post(`/sessions/${sid}/transcript`, { speaker, text: message, ts_ms: Math.round(performance.now() - startedAt!) })
@@ -130,6 +141,7 @@ export function useInterviewer(sessionId: string | null, startedAt: number | nul
     void connect()
     return () => {
       closed = true
+      clearInterval(release)
       socket?.close()
       void conversation?.endSession()
       setStatus('off')
