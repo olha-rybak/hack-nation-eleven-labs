@@ -2,7 +2,6 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { Shell } from './components/Shell'
-import { ErpApp } from './erp/ErpApp'
 import { CapturePage } from './routes/CapturePage'
 import { DebriefPage } from './routes/DebriefPage'
 import { MapPage } from './routes/MapPage'
@@ -16,7 +15,6 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/erp/*" element={<ErpApp />} />
         <Route path="/shop/*" element={<ShopApp />} />
         <Route element={<Shell />}>
           <Route index element={<Navigate to="/capture" replace />} />

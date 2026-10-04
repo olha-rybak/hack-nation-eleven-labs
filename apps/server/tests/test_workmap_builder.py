@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
@@ -221,3 +223,14 @@ def test_route_builds_and_saves_draft(tmp_path):
         assert r.status_code == 200 and r.json()["steps"][0]["reason"]["text"].startswith("Equip")
         assert client.get("/sessions/s1/workmap/draft").json()["id"] == r.json()["id"]
         assert client.get("/sessions/nope/workmap/draft").status_code == 404
+
+
+def test_route_serves_confirmed_workmap(tmp_path):
+    fixture = Path(__file__).parent / "fixtures" / "workmap_returns.json"
+    with TestClient(app) as client:
+        app.state.store = store = SessionStore(tmp_path)
+        store.create("s1")
+        assert client.get("/sessions/s1/workmap").status_code == 404
+        (store.session_dir("s1") / "workmap.json").write_bytes(fixture.read_bytes())
+        r = client.get("/sessions/s1/workmap")
+        assert r.status_code == 200 and len(r.json()["steps"]) == 5

@@ -1,7 +1,7 @@
 import { Link, NavLink, Outlet } from 'react-router'
 import { ThemeToggle } from './ThemeToggle'
 
-const DEMO_ID = 'demo'
+const DEMO_ID = 'demo-brandt'
 
 export function Shell() {
   return (
@@ -17,8 +17,8 @@ export function Shell() {
           <NavLink to={`/teach/${DEMO_ID}`}>Teach</NavLink>
         </nav>
         <div className="globalnav-end">
-          <a className="globalnav-erp" href="/erp" target="_blank" rel="noreferrer">
-            Open ERP
+          <a className="globalnav-app" href="/shop" target="_blank" rel="noreferrer">
+            Open shop
           </a>
           <ThemeToggle />
         </div>

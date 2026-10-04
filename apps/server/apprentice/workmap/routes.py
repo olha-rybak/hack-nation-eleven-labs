@@ -5,10 +5,12 @@ from fastapi import APIRouter, HTTPException, Request
 from apprentice.llm.structured import StructuredLlmError
 from apprentice.workmap.builder import build_draft
 from apprentice.workmap.draft import DraftWorkMap
+from apprentice.workmap.schema import WorkMap
 
 router = APIRouter()
 
 DRAFT_FILE = "workmap_draft.json"
+WORKMAP_FILE = "workmap.json"
 
 
 def _session_dir(request: Request, session_id: str):
@@ -43,3 +45,12 @@ def get_draft(session_id: str, request: Request) -> DraftWorkMap:
     if not path.is_file():
         raise HTTPException(404, "no draft yet; POST to build one")
     return DraftWorkMap.model_validate(json.loads(path.read_text(encoding="utf-8")))
+
+
+@router.get("/sessions/{session_id}/workmap")
+def get_workmap(session_id: str, request: Request) -> WorkMap:
+    """The confirmed Work Map, the one the timeline, the vault and the tutor read."""
+    path = _session_dir(request, session_id) / WORKMAP_FILE
+    if not path.is_file():
+        raise HTTPException(404, "no confirmed Work Map yet")
+    return WorkMap.model_validate(json.loads(path.read_text(encoding="utf-8")))
