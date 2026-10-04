@@ -7,6 +7,7 @@ from apprentice.guardrails.engine import (
     NotConfirmed,
     parse_amount,
     parse_month,
+    to_var,
 )
 from apprentice.workmap.schema import WorkMap
 
@@ -119,3 +120,14 @@ def test_parse_amount(raw, expected):
 )
 def test_parse_month(raw, expected):
     assert parse_month(raw) == expected
+
+
+def test_returns_desk_labels_map_to_condition_variables():
+    assert to_var("Price paid", "279.00 EUR") == ("amount", 279.0)
+    assert to_var("Price", "19,00 EUR") == ("amount", 19.0)
+    assert to_var("Reason", "Arrived damaged") == ("reason", "Arrived damaged")
+    assert to_var("Packaging", "Box dented") == ("packaging", "Box dented")
+    assert to_var("Resolution", "Carrier claim") == ("resolution", "Carrier claim")
+    assert to_var("Orders (12 months)", "10") == ("orders_12m", 10.0)
+    assert to_var("Returns (12 months)", "9") == ("returns_12m", 9.0)
+    assert to_var("Returns (12 months)", "") == ("returns_12m", None)
